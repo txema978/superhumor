@@ -115,9 +115,14 @@
 
     // ===== Utilidades de Cache Storage para imágenes =====
     var IMG_CACHE = 'sh-images-v1';
-    function imgKey(kind, num){ return 'sh://'+kind+'/'+num; } // kind = 'portadas' | 'lomos'
+    function imgKey(kind, num){ return 'https://superhumor.local/'+kind+'/'+num; } // kind = 'portadas' | 'lomos'
 
+    function ensureCachesAvailable(){
+      if (!('caches' in window)) throw new Error('CACHE_API_UNAVAILABLE');
+    }
     function cachePutBlob(key, blob){
+      ensureCachesAvailable();
+      ensureCachesAvailable();
       return caches.open(IMG_CACHE).then(function(cache){
         var req = new Request(key);
         var res = new Response(blob, { headers: { 'Content-Type': blob.type || 'image/jpeg' } });
@@ -125,6 +130,7 @@
       });
     }
     function cacheGetBlob(key){
+      ensureCachesAvailable();
       return caches.open(IMG_CACHE).then(function(cache){
         return cache.match(new Request(key));
       }).then(function(res){
@@ -133,6 +139,7 @@
       });
     }
     function cacheDelete(key){
+      ensureCachesAvailable();
       return caches.open(IMG_CACHE).then(function(cache){
         return cache.delete(new Request(key));
       });
@@ -140,6 +147,7 @@
 
     // ===== Compresión/redimensionado antes de guardar =====
     function resizeImage(file, maxW, maxH, quality){
+      // Devuelve Promise<Blob> con fallback si canvas.toBlob es null (iOS viejos)
       return new Promise(function(resolve, reject){
         var img = new Image();
         var reader = new FileReader();
@@ -155,10 +163,18 @@
               c.width = W; c.height = H;
               var ctx = c.getContext('2d');
               ctx.drawImage(img, 0, 0, W, H);
-              c.toBlob(function(blob){
-                if (!blob) return reject(new Error('No blob'));
-                resolve(blob);
-              }, 'image/jpeg', quality);
+              if (c.toBlob) {
+                c.toBlob(function(blob){
+                  if (!blob) return reject(new Error('No blob'));
+                  resolve(blob);
+                }, 'image/jpeg', quality);
+              } else {
+                // Fallback: usar dataURL y convertir a Blob via fetch
+                try {
+                  var dataUrl = c.toDataURL('image/jpeg', quality);
+                  fetch(dataUrl).then(function(r){ return r.blob(); }).then(resolve, reject);
+                } catch(err){ reject(err); }
+              }
             }catch(err){ reject(err); }
           };
           img.onerror = reject;
@@ -395,7 +411,13 @@
             save(); render();
           });
         })
-        .catch(function(){ alert('No se pudo procesar/guardar la imagen.'); });
+        .catch(function(err){
+          let msg = 'No se pudo procesar/guardar la imagen.';
+          if (String(err&&err.message).includes('CACHE_API_UNAVAILABLE')) {
+            msg = 'Tu iPhone no soporta Cache Storage en esta versión. Actualiza iOS o usa Safari normal.';
+          }
+          alert(msg);
+        });
     });
 
     $('#in-busqueda').addEventListener('input', function(e){ state.busqueda = e.target.value; });
