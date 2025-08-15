@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.6)</title>
+  <title>Colección Superhumor — PWA (v3.7)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -67,7 +67,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.6</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.7</div>
       </div>
     </div>
 
@@ -118,6 +118,7 @@
           <button class="btn" id="btn-sync-setup">Configurar</button>
           <button class="btn brand" id="btn-sync-push">Guardar en la nube</button>
           <button class="btn" id="btn-sync-pull">Cargar desde la nube</button>
+          <button class="btn" id="btn-scroll-top" title="Ir arriba">⬆️</button>
         </div>
       </div>
       <div class="small" id="sync-status" style="margin-top:6px;color:#6b7280"></div>
@@ -417,6 +418,18 @@
     })();
 
     init();
+
+    // Botón: ir arriba (desde la sección de sincronización)
+    (function(){
+      var btnTop = document.getElementById('btn-scroll-top');
+      if (btnTop){
+        btnTop.addEventListener('click', function(){
+          try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+          catch(e){ window.scrollTo(0, 0); }
+        });
+      }
+    })();
+
   </script>
 </body>
 </html>
