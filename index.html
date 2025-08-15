@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.7)</title>
+  <title>Colección Superhumor — PWA (v3.3)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -12,7 +12,6 @@
   <style>
     :root { --bg:#f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --brand:#2563eb; --green:#16a34a; --red:#dc2626; --border:#e5e7eb; }
     *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg)}
     .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
     .header{background:linear-gradient(90deg,#2563eb,#1e40af);color:#fff;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px}
@@ -67,7 +66,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.7</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.3</div>
       </div>
     </div>
 
@@ -81,7 +80,6 @@
       <div class="row">
         <input id="in-busqueda" type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)"/>
         <button class="btn brand" id="btn-buscar">Buscar</button>
-        <button class="btn" id="btn-scroll-sync" title="Ir a Sincronización">⬇️</button>
       </div>
       <div class="small">Puedes buscar uno o varios números separados por comas, espacios o guiones.</div>
     </div>
@@ -109,45 +107,11 @@
       </div>
       <div class="progress"><div id="bar" style="width:0%"></div></div>
     </div>
-
-    <!-- Sincronización (abajo del todo) -->
-    <div class="card" id="sync-card" style="margin-top:12px">
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div class="small">Sincronización entre dispositivos (opcional)</div>
-        <div class="row" style="gap:8px">
-          <button class="btn" id="btn-sync-setup">Configurar</button>
-          <button class="btn brand" id="btn-sync-push">Guardar en la nube</button>
-          <button class="btn" id="btn-sync-pull">Cargar desde la nube</button>
-          <button class="btn" id="btn-scroll-top" title="Ir arriba">⬆️</button>
-        </div>
-      </div>
-      <div class="small" id="sync-status" style="margin-top:6px;color:#6b7280"></div>
-    </div>
-
-    <div id="sync-modal" class="modal" style="display:none">
-      <div style="max-width:520px">
-        <button class="btn close">✖</button>
-        <div class="card" style="padding:16px">
-          <h3 style="margin-top:0">Configurar sincronización</h3>
-          <div class="small" style="margin-bottom:8px">
-            Necesitas un <b>Gist secreto</b> en GitHub y un <b>token</b> con permiso <code>gist</code>.
-          </div>
-          <label class="small">Gist ID</label>
-          <input id="gist-id" type="text" placeholder="a1b2c3d4e5f6..." style="margin:6px 0 12px 0;width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px"/>
-          <label class="small">Token (scope: gist)</label>
-          <input id="gist-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxx" style="margin:6px 0 12px 0;width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px"/>
-          <div class="row" style="justify-content:flex-end;gap:8px">
-            <button class="btn" id="btn-sync-cancel">Cancelar</button>
-            <button class="btn brand" id="btn-sync-save">Guardar</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script>
-    // Registrar SW (v35 ya desplegado previamente)
-    if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker-v35.js').catch(function(){}); }); }
+    // SW v33
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker-v33.js').catch(function(){}); }); }
 
     function $(sel, el){ return (el||document).querySelector(sel); }
 
@@ -346,90 +310,7 @@
 
     window.addEventListener('resize', function(){ setTimeout(syncSpineHeights, 0); });
 
-    // Botón "Ir a Sincronización"
-    (function(){
-      var btn = document.getElementById('btn-scroll-sync');
-      if (btn){
-        btn.addEventListener('click', function(){
-          var target = document.getElementById('sync-card');
-          if (target && target.scrollIntoView){
-            try{ target.scrollIntoView({behavior:'smooth', block:'start'}); }
-            catch(e){ location.hash = '#sync-card'; }
-          } else { location.hash = '#sync-card'; }
-        });
-      }
-    })();
-
-    // --- Sincronización vía GitHub Gist (manual) ---
-    (function(){
-      var SYNC_FILE = 'superhumor.json';
-      function syncStatus(msg){ var el=document.getElementById('sync-status'); if (el) el.textContent = msg||''; }
-      function getCfg(){ return { id: localStorage.getItem('sh_sync_gist')||'', token: localStorage.getItem('sh_sync_token')||'' }; }
-      function setCfg(id,tk){ localStorage.setItem('sh_sync_gist', id||''); localStorage.setItem('sh_sync_token', tk||''); }
-      function headers(tk){ return { 'Accept':'application/vnd.github+json', 'Authorization':'Bearer '+tk }; }
-
-      function openSyncModal(show){
-        var m=document.getElementById('sync-modal'); if (!m) return;
-        m.style.display = show?'flex':'none';
-        if (show){ var c=getCfg(); var gi=document.getElementById('gist-id'); var gt=document.getElementById('gist-token'); if(gi)gi.value=c.id; if(gt)gt.value=c.token; }
-      }
-
-      document.addEventListener('click', function(e){
-        if (e.target.closest('#btn-sync-setup')) openSyncModal(true);
-        if (e.target.closest('#sync-modal .close') || e.target.closest('#btn-sync-cancel')) openSyncModal(false);
-        if (e.target.closest('#btn-sync-save')){
-          var id = (document.getElementById('gist-id')||{}).value||'';
-          var tk = (document.getElementById('gist-token')||{}).value||'';
-          setCfg(id.trim(), tk.trim()); openSyncModal(false); syncStatus('Configuración guardada.');
-        }
-        if (e.target.closest('#btn-sync-push')) pushToCloud();
-        if (e.target.closest('#btn-sync-pull')) pullFromCloud();
-      });
-
-      function pushToCloud(){
-        var cfg=getCfg(); if(!cfg.id||!cfg.token){ syncStatus('Falta configurar Gist ID y token.'); return; }
-        syncStatus('Subiendo…');
-        var payload = JSON.stringify({ updatedAt: new Date().toISOString(), tomos: state.tomos });
-        fetch('https://api.github.com/gists/'+cfg.id, { headers: headers(cfg.token) })
-          .then(function(res){ if (!res.ok) throw new Error('No puedo acceder al Gist'); return res.json(); })
-          .then(function(json){
-            var patch = { files: {} }; patch.files[SYNC_FILE] = { content: payload };
-            return fetch('https://api.github.com/gists/'+cfg.id, {
-              method:'PATCH', headers: Object.assign({'Content-Type':'application/json'}, headers(cfg.token)), body: JSON.stringify(patch)
-            });
-          })
-          .then(function(res){ if (!res.ok) throw new Error('Error subiendo'); syncStatus('Guardado en la nube ✅'); })
-          .catch(function(){ syncStatus('No puedo acceder al Gist. Revisa ID/token.'); });
-      }
-
-      function pullFromCloud(){
-        var cfg=getCfg(); if(!cfg.id||!cfg.token){ syncStatus('Falta configurar Gist ID y token.'); return; }
-        syncStatus('Descargando…');
-        fetch('https://api.github.com/gists/'+cfg.id, { headers: headers(cfg.token) })
-          .then(function(res){ if (!res.ok) throw new Error('No puedo leer el Gist'); return res.json(); })
-          .then(function(json){
-            var files = json.files||{}; if (!files[SYNC_FILE] || !files[SYNC_FILE].content){ syncStatus('El archivo '+SYNC_FILE+' no existe.'); return; }
-            var data = JSON.parse(files[SYNC_FILE].content||'{}');
-            if (data && data.tomos){ state.tomos = ensure67(data.tomos); save(); render(); syncStatus('Datos descargados y aplicados ✅'); }
-            else syncStatus('Formato inesperado en el Gist.');
-          })
-          .catch(function(){ syncStatus('Error leyendo el Gist.'); });
-      }
-    })();
-
     init();
-
-    // Botón: ir arriba (desde la sección de sincronización)
-    (function(){
-      var btnTop = document.getElementById('btn-scroll-top');
-      if (btnTop){
-        btnTop.addEventListener('click', function(){
-          try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
-          catch(e){ window.scrollTo(0, 0); }
-        });
-      }
-    })();
-
   </script>
 </body>
 </html>
