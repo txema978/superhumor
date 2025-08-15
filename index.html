@@ -3,76 +3,65 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v2.9)</title>
+  <title>Colección Superhumor — PWA (v3.0)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#2563eb">
   <style>
-    :root {
-      --bg: #f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280;
-      --brand:#2563eb; --green:#16a34a; --red:#dc2626; --border:#e5e7eb;
-    }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:var(--text); background:var(--bg); }
-    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
-    .header { background: linear-gradient(90deg, #2563eb, #1e40af); color:#fff; border-radius: 14px; padding: 16px; display:flex; align-items:center; gap:12px; }
-    .title { font-size: clamp(20px, 3vw, 26px); font-weight:800; letter-spacing:-0.02em; margin:0; }
-    .sub { margin: 2px 0 0; color:#e5e7eb; }
-    .grid3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:12px; }
-    .stat { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px; }
-    .stat b { font-size:22px; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; }
-    .row { display:flex; gap:12px; align-items:center; }
-    .seg { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
-    .btn { border:1px solid var(--border); background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
-    .btn:hover { border-color:#cbd5e1; }
-    .btn.brand { background: var(--brand); color:#fff; border-color:transparent; }
-    .btn.green { background: var(--green); color:#fff; border-color:transparent; }
-    .btn.red { background: var(--red); color:#fff; border-color:transparent; }
-    .seg .btn { padding:6px 10px; font-size:14px; }
-    .seg .btn.active { background:var(--brand); color:#fff; border-color:transparent; }
-    .small { font-size:12px; color:var(--muted); }
-    input[type="text"]{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); outline:none; }
-    input[type="text"]:focus{ border-color:#cbd5e1; }
-    .results { background: var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin:12px 0; }
-    .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#fff; color:#6b7280; }
-    .badge.ok { border-color:#86efac; color:#166534; background:#f0fdf4; }
-    .badge.no { border-color:#fecaca; color:#7f1d1d; background:#fef2f2; }
-    .cards { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
-    @media (max-width: 960px) { .cards { grid-template-columns: repeat(2, minmax(0,1fr)); } }
-    @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
-    .progress { background:#e5e7eb; border-radius:999px; height:10px; overflow:hidden; }
-    .progress > div { height:100%; background: linear-gradient(90deg, #22c55e, #16a34a); width:0%; transition: width .3s ease; }
-    .center { text-align:center; }
-    .modal { position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; padding:20px; }
-    .modal > div { position:relative; max-width: 90vw; max-height:90vh; }
-    .modal img { max-width:90vw; max-height:90vh; border-radius:12px; display:block; }
-    .close { position:absolute; right:8px; top:8px; }
+    :root { --bg:#f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --brand:#2563eb; --green:#16a34a; --red:#dc2626; --border:#e5e7eb; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;color:var(--text);background:var(--bg)}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    .header{background:linear-gradient(90deg,#2563eb,#1e40af);color:#fff;border-radius:14px;padding:16px;display:flex;align-items:center;gap:12px}
+    .title{font-size:clamp(20px,3vw,26px);font-weight:800;letter-spacing:-.02em;margin:0}
+    .sub{margin:2px 0 0;color:#e5e7eb}
+    .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+    .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+    .stat b{font-size:22px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+    .row{display:flex;gap:12px;align-items:center}
+    .seg{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .btn{border:1px solid var(--border);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn:hover{border-color:#cbd5e1}
+    .btn.brand{background:var(--brand);color:#fff;border-color:transparent}
+    .btn.green{background:var(--green);color:#fff;border-color:transparent}
+    .btn.red{background:var(--red);color:#fff;border-color:transparent}
+    .seg .btn{padding:6px 10px;font-size:14px}
+    .seg .btn.active{background:var(--brand);color:#fff;border-color:transparent}
+    .small{font-size:12px;color:var(--muted)}
+    input[type="text"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);outline:0}
+    input[type="text"]:focus{border-color:#cbd5e1}
+    .results{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin:12px 0}
+    .badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:#fff;color:#6b7280}
+    .badge.ok{border-color:#86efac;color:#166534;background:#f0fdf4}
+    .badge.no{border-color:#fecaca;color:#7f1d1d;background:#fef2f2}
+    .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    @media(max-width:960px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.cards{grid-template-columns:1fr}}
+    .progress{background:#e5e7eb;border-radius:999px;height:10px;overflow:hidden}
+    .progress>div{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);width:0%;transition:width .3s ease}
+    .center{text-align:center}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal>div{position:relative;max-width:90vw;max-height:90vh}
+    .modal img{max-width:90vw;max-height:90vh;border-radius:12px;display:block}
+    .close{position:absolute;right:8px;top:8px}
 
     /* Image frames */
-    .img-frame { position:relative; width:100%; background:#f9fafb; border:1px dashed #d1d5db; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-    .img-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    .img-frame{position:relative;width:100%;background:#f9fafb;border:1px dashed #d1d5db;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .img-frame img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
     /* Side-by-side cover+spine */
-    .cover-spine {
-display:flex; gap:6px; align-items:stretch;
-}
-    .cover-col {
-flex: 1 1 220px; min-width: 180px; display:flex; flex-direction:column;
-}
-    .spine-col {
-flex: 0 0 50px; width:50px; display:flex; flex-direction:column;
-}
-    .spine-col .img-frame {
-height:100%; width:100%;
-}
-    .cover-col .img-frame {
-aspect-ratio: 3 / 4; width:100%;
-}
+    .cover-spine{display:flex;gap:6px;align-items:stretch}
+    .cover-col{flex:1 1 220px;min-width:180px;display:flex;flex-direction:column}
+    .spine-col{flex:0 0 50px;width:50px;display:flex;flex-direction:column}
+    /* The cover defines the height via aspect-ratio */
+    .cover-col .img-frame{aspect-ratio:3/4;width:100%}
+    /* Make spine match the cover height exactly */
+    .spine-col .img-frame{height:100%;width:100%}
 
-    .thumb-tools { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
+    .thumb-tools{position:absolute;right:6px;top:6px;display:flex;gap:6px}
   </style>
 </head>
 <body>
@@ -81,7 +70,7 @@ aspect-ratio: 3 / 4; width:100%;
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v2.9</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.0</div>
       </div>
     </div>
 
@@ -125,10 +114,10 @@ aspect-ratio: 3 / 4; width:100%;
   </div>
 
   <script>
-    // Register SW with new name (v28) to nuke old cache
+    // Register SW v30
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker-v29.js').catch(()=>{});
+        navigator.serviceWorker.register('./service-worker-v30.js').catch(()=>{});
       });
     }
 
@@ -141,18 +130,14 @@ aspect-ratio: 3 / 4; width:100%;
       for (const p of parts) {
         if (/^\d+-\d+$/.test(p)) {
           const [a, b] = p.split("-").map(n => parseInt(n, 10));
-          if (Number.isInteger(a) && Number.isInteger(b) && a <= b) {
-            for (let i=a;i<=b;i++) out.add(i);
-          }
-        } else if (/^\d+$/.test(p)) {
-          out.add(parseInt(p, 10));
-        }
+          if (Number.isInteger(a) && Number.isInteger(b) && a <= b) { for (let i=a;i<=b;i++) out.add(i); }
+        } else if (/^\d+$/.test(p)) { out.add(parseInt(p, 10)); }
       }
       return [...out].filter(n => n>=1 && n<=67).sort((x,y)=>x-y);
     }
 
     const STORAGE_KEY = "superhumor_v2";
-    const state = { tomos:{}, filtro:"todos", busqueda:"", resultados:[], showResultados:false, fotoGrande:null };
+    const state = { tomos:{}, filtro:"todos", busqueda:"", resultados:[], showResultados:false };
 
     function load() { try { const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):null; } catch(e){ return null; } }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({tomos:state.tomos})); } catch(e){} }
@@ -162,6 +147,7 @@ aspect-ratio: 3 / 4; width:100%;
       if (saved && saved.tomos) state.tomos = saved.tomos;
       else { for (let i=1;i<=67;i++) state.tomos[i] = { tengo:false, comentario:"", portada:null, lomo:null }; }
       render();
+      syncSpineHeights();
     }
 
     function stats() {
@@ -199,15 +185,15 @@ aspect-ratio: 3 / 4; width:100%;
             <div class="cover-col">
               <div class="small" style="margin:6px 0">Portada (completa)</div>
               ${tomo.portada ? `
-                <div class="img-frame">
-                  <img src="${tomo.portada}" alt="Portada tomo ${num}" />
+                <div class="img-frame js-cover-frame">
+                  <img src="${tomo.portada}" alt="Portada tomo ${num}" class="js-cover-img"/>
                   <div class="thumb-tools">
                     <button class="btn" data-action="ver-portada" title="Ver grande">👁️</button>
                     <button class="btn red" data-action="eliminar-portada" title="Eliminar">🗑️</button>
                   </div>
                 </div>
               ` : `
-                <label class="img-frame" style="cursor:pointer" title="Subir portada">
+                <label class="img-frame js-cover-frame" style="cursor:pointer" title="Subir portada">
                   <input type="file" accept="image/*" style="display:none" data-action="subir-portada"/>
                   <div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;">
                     <span>📷</span><span>Subir portada</span>
@@ -218,15 +204,15 @@ aspect-ratio: 3 / 4; width:100%;
             <div class="spine-col">
               <div class="small" style="margin:6px 0">Lomo</div>
               ${tomo.lomo ? `
-                <div class="img-frame">
-                  <img src="${tomo.lomo}" alt="Lomo tomo ${num}" />
+                <div class="img-frame js-spine-frame">
+                  <img src="${tomo.lomo}" alt="Lomo tomo ${num}" class="js-spine-img"/>
                   <div class="thumb-tools">
                     <button class="btn" data-action="ver-lomo" title="Ver grande">👁️</button>
                     <button class="btn red" data-action="eliminar-lomo" title="Eliminar">🗑️</button>
                   </div>
                 </div>
               ` : `
-                <label class="img-frame" style="cursor:pointer" title="Subir lomo">
+                <label class="img-frame js-spine-frame" style="cursor:pointer" title="Subir lomo">
                   <input type="file" accept="image/*" style="display:none" data-action="subir-lomo"/>
                   <div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;">
                     <span>📷</span><span>Subir lomo</span>
@@ -265,17 +251,17 @@ aspect-ratio: 3 / 4; width:100%;
           <div class="cover-spine" style="margin-top:8px">
             <div class="cover-col">
               ${t.portada ? `
-                <div class="img-frame">
-                  <img src="${t.portada}" alt="Portada tomo ${t.numero}" />
+                <div class="img-frame js-cover-frame">
+                  <img src="${t.portada}" alt="Portada tomo ${t.numero}" class="js-cover-img"/>
                 </div>` : `
-                <div class="img-frame"><div class="small" style="color:#9ca3af">Sin portada</div></div>`}
+                <div class="img-frame js-cover-frame"><div class="small" style="color:#9ca3af">Sin portada</div></div>`}
             </div>
             <div class="spine-col">
               ${t.lomo ? `
-                <div class="img-frame">
-                  <img src="${t.lomo}" alt="Lomo tomo ${t.numero}" />
+                <div class="img-frame js-spine-frame">
+                  <img src="${t.lomo}" alt="Lomo tomo ${t.numero}" class="js-spine-img"/>
                 </div>` : `
-                <div class="img-frame"><div class="small" style="color:#9ca3af">Sin lomo</div></div>`}
+                <div class="img-frame js-spine-frame"><div class="small" style="color:#9ca3af">Sin lomo</div></div>`}
             </div>
           </div>
           ${t.comentario ? `<div class="small" style="white-space:pre-wrap;margin-top:6px">“${t.comentario.replace(/[&<>]/g,'')}”</div>` : ``}
@@ -287,6 +273,8 @@ aspect-ratio: 3 / 4; width:100%;
       renderStats();
       const entries = Object.entries(state.tomos).filter(([n,t]) => state.filtro==='tengo'?t.tengo : state.filtro==='faltan'?!t.tengo : true);
       $('#cards').innerHTML = entries.map(([num, tomo]) => cardHTML(num, tomo)).join('');
+      // After render, sync heights
+      requestAnimationFrame(syncSpineHeights);
     }
 
     function buscar() {
@@ -296,6 +284,34 @@ aspect-ratio: 3 / 4; width:100%;
       $('#res-title').textContent = 'Resultados de búsqueda ('+state.resultados.length+' tomos)';
       $('#res-cards').innerHTML = state.resultados.map(cardHTMLBusqueda).join('');
       $('#box-resultados').style.display='block';
+      requestAnimationFrame(syncSpineHeights);
+    }
+
+    // Keep spine frames exactly as tall as their sibling cover frames
+    function syncSpineHeights() {
+      const pairs = document.querySelectorAll('.cover-spine');
+      pairs.forEach(pair => {
+        const cover = pair.querySelector('.cover-col .js-cover-frame');
+        const spine = pair.querySelector('.spine-col .js-spine-frame');
+        if (!cover || !spine) return;
+        // Reset then set to measured height
+        spine.style.height = 'auto';
+        const h = cover.getBoundingClientRect().height;
+        if (h > 0) spine.style.height = h + 'px';
+      });
+      // Also ensure after images load
+      document.querySelectorAll('.js-cover-img, .js-spine-img').forEach(img => {
+        img.addEventListener('load', () => {
+          const pair = img.closest('.cover-spine');
+          if (!pair) return;
+          const cover = pair.querySelector('.cover-col .js-cover-frame');
+          const spine = pair.querySelector('.spine-col .js-spine-frame');
+          if (!cover || !spine) return;
+          spine.style.height = 'auto';
+          const h = cover.getBoundingClientRect().height;
+          if (h > 0) spine.style.height = h + 'px';
+        }, { once:true });
+      });
     }
 
     // Events
@@ -350,7 +366,8 @@ aspect-ratio: 3 / 4; width:100%;
       document.body.appendChild(modal);
     }
 
-    init();
+    // Re-sync on resize/orientation change
+    window.addEventListener('resize', () => requestAnimationFrame(syncSpineHeights));
   </script>
 </body>
 </html>
