@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.4c)</title>
+  <title>Colección Superhumor — PWA (v3.4d)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -422,7 +422,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4c</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4d</div>
       </div>
     </div>
 
@@ -442,5 +442,34 @@
     <div class="card" style="margin-top:12px">
       <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div class="small">Sincronización entre dispositivos (opcional)</div>
+
+<script>
+// Recolocar la tarjeta de Sincronización al final (después del progreso)
+(function(){
+  function moveSync(){
+    try{
+      var wrap = document.querySelector('.wrap') || document.body;
+      var syncStatus = document.getElementById('sync-status');
+      if (!syncStatus) return;
+      var syncCard = syncStatus.closest('.card') || syncStatus.closest('section') || syncStatus;
+      var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+      var progressCard = cards.find(function(c){ return /Progreso de la colección/i.test(c.textContent||''); });
+      if (wrap && syncCard){
+        if (progressCard && progressCard.parentNode === wrap){
+          wrap.insertBefore(syncCard, progressCard.nextSibling);
+        } else {
+          wrap.appendChild(syncCard);
+        }
+      }
+    }catch(e){/* noop */}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', moveSync);
+  } else {
+    moveSync();
+  }
+})();
+</script>
+
 </body>
 </html>
