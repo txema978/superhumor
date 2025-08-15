@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.4)</title>
+  <title>Colección Superhumor — PWA (v3.4c)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -61,31 +61,7 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="header">
-      <div style="font-size:26px">📚</div>
-      <div>
-        <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4</div>
-      </div>
-    </div>
-
-    <div class="grid3">
-      <div class="stat"><div class="small">Tomos que tienes</div><b id="st-tengo">0</b></div>
-      <div class="stat"><div class="small">Tomos que faltan</div><b id="st-faltan">67</b></div>
-      <div class="stat"><div class="small">Completado</div><b id="st-pct">0%</b></div>
-    </div>
-
-    <div class="card" style="margin-top:12px">
-      <div class="row">
-        <input id="in-busqueda" type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)"/>
-        <button class="btn brand" id="btn-buscar">Buscar</button>
-      </div>
-      <div class="small">Puedes buscar uno o varios números separados por comas, espacios o guiones.</div>
-    
-    <div class="card" style="margin-top:12px">
-      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div class="small">Sincronización entre dispositivos (opcional)</div>
+  
         <div class="row" style="gap:8px">
           <button class="btn" id="btn-sync-setup">Configurar</button>
           <button class="btn brand" id="btn-sync-push">Guardar en la nube</button>
@@ -441,5 +417,30 @@
     }
 
   </script>
+<div class="wrap">
+    <div class="header">
+      <div style="font-size:26px">📚</div>
+      <div>
+        <h1 class="title">Colección Superhumor</h1>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4c</div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="stat"><div class="small">Tomos que tienes</div><b id="st-tengo">0</b></div>
+      <div class="stat"><div class="small">Tomos que faltan</div><b id="st-faltan">67</b></div>
+      <div class="stat"><div class="small">Completado</div><b id="st-pct">0%</b></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="row">
+        <input id="in-busqueda" type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)"/>
+        <button class="btn brand" id="btn-buscar">Buscar</button>
+      </div>
+      <div class="small">Puedes buscar uno o varios números separados por comas, espacios o guiones.</div>
+    
+    <div class="card" style="margin-top:12px">
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div class="small">Sincronización entre dispositivos (opcional)</div>
 </body>
 </html>
