@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.2)</title>
+  <title>Colección Superhumor — PWA (v3.3)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -66,7 +66,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.2</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.3</div>
       </div>
     </div>
 
@@ -110,168 +110,205 @@
   </div>
 
   <script>
-    if ('serviceWorker' in navigator) {{ window.addEventListener('load', () => {{ navigator.serviceWorker.register('./service-worker-v32.js').catch(()=>{{}}); }}); }}
+    // SW v33
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('./service-worker-v33.js').catch(function(){}); }); }
 
-    const $ = (s, el=document) => el.querySelector(s);
+    function $(sel, el){ return (el||document).querySelector(sel); }
 
-    function parseBusqueda(text) {{ const parts = text.split(/[,\s]+/).filter(Boolean); const out = new Set(); for (const p of parts) {{ if (/^\d+-\d+$/.test(p)) {{ const [a,b]=p.split('-').map(n=>parseInt(n,10)); if (Number.isInteger(a)&&Number.isInteger(b)&&a<=b) for(let i=a;i<=b;i++) out.add(i); }} else if (/^\d+$/.test(p)) out.add(parseInt(p,10)); }} return [...out].filter(n=>n>=1&&n<=67).sort((x,y)=>x-y); }}
+    function parseBusqueda(text){
+      var parts = text.split(/[,\s]+/);
+      var out = []; var used = {};
+      for (var i=0;i<parts.length;i++){
+        var p = parts[i].trim(); if (!p) continue;
+        if (/^\d+-\d+$/.test(p)){
+          var ab = p.split('-'); var a = parseInt(ab[0],10), b = parseInt(ab[1],10);
+          if (!isNaN(a)&&!isNaN(b)&&a<=b){ for (var n=a;n<=b;n++){ if (n>=1&&n<=67 && !used[n]){ out.push(n); used[n]=1; } } }
+        } else if (/^\d+$/.test(p)){
+          var n = parseInt(p,10); if (n>=1&&n<=67 && !used[n]){ out.push(n); used[n]=1; }
+        }
+      }
+      out.sort(function(a,b){return a-b;});
+      return out;
+    }
 
-    const STORAGE_KEY = "superhumor_v2";
-    const state = {{ tomos:{}, filtro:"todos", busqueda:"", resultados:[] }};
+    var STORAGE_KEY = 'superhumor_v2';
+    var state = { tomos:[], filtro:'todos', busqueda:'', resultados:[] };
 
-    const emptyTomo = () => ({{ tengo:false, comentario:"", portada:null, lomo:null }});
-    function ensure67(obj) {{ if (!obj || typeof obj!=='object') obj={{}}; for (let i=1;i<=67;i++) if (!obj[i]) obj[i]=emptyTomo(); return obj; }}
-    function load() {{ try {{ const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):null; }} catch(e){{ return null; }} }}
-    function save() {{ try {{ localStorage.setItem(STORAGE_KEY, JSON.stringify({{tomos:state.tomos}})); }} catch(e){{}} }}
+    function emptyTomo(){ return { tengo:false, comentario:'', portada:null, lomo:null }; }
 
-    function init() {{
-      const saved=load();
-      state.tomos = saved && saved.tomos ? ensure67(saved.tomos) : ensure67(null);
+    function ensure67(arr){
+      if (!arr || !arr.length){ arr = new Array(68); }
+      for (var i=1;i<=67;i++){ if (!arr[i]) arr[i] = emptyTomo(); }
+      return arr;
+    }
+
+    function load(){
+      try{
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        return parsed && parsed.tomos ? parsed.tomos : null;
+      }catch(e){ return null; }
+    }
+
+    function save(){
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({ tomos: state.tomos })); }catch(e){}
+    }
+
+    function init(){
+      var saved = load();
+      state.tomos = ensure67(saved);
       save();
       render();
       syncSpineHeights();
-    }}
+    }
 
-    function stats() {{ const tengo=Object.values(state.tomos).filter(t=>t.tengo).length; return {{ tengo, faltan:67-tengo, pct: Math.round((tengo/67)*100) }}; }}
-    function renderStats() {{
-      const s=stats();
+    function stats(){
+      var tengo=0;
+      for (var i=1;i<=67;i++){ if (state.tomos[i] && state.tomos[i].tengo) tengo++; }
+      return { tengo:tengo, faltan:67-tengo, pct: Math.round((tengo/67)*100) };
+    }
+
+    function renderStats(){
+      var s = stats();
       $('#st-tengo').textContent = s.tengo;
       $('#st-faltan').textContent = s.faltan;
       $('#st-pct').textContent = s.pct + '%';
       $('#st-cont').textContent = s.tengo + ' de 67 tomos';
-      document.querySelectorAll('.seg .btn').forEach(btn=>{{ const f=btn.getAttribute('data-filtro'); btn.classList.toggle('active', f===state.filtro); if (f==='tengo') btn.textContent='Que tengo ('+s.tengo+')'; if (f==='faltan') btn.textContent='Que me faltan ('+s.faltan+')'; }});
+      var seg = document.querySelectorAll('.seg .btn');
+      for (var i=0;i<seg.length;i++){
+        var f = seg[i].getAttribute('data-filtro');
+        seg[i].classList.toggle('active', f === state.filtro);
+        if (f==='tengo') seg[i].textContent = 'Que tengo ('+s.tengo+')';
+        if (f==='faltan') seg[i].textContent = 'Que me faltan ('+s.faltan+')';
+      }
       $('#bar').style.width = (s.tengo/67*100).toFixed(2)+'%';
-    }}
+    }
 
-    function cardHTML(num, tomo) {{
-      let html = '';
+    function cardHTML(num, tomo){
+      var html = '';
       html += '<div class="card" data-num="'+num+'">';
-      html +=   '<h3 style="margin-top:0">Tomo '+num+'</h3>';
-      html +=   '<div class="row" style="gap:8px">';
-      html +=     '<button class="btn '+(tomo.tengo?'green':'')+'" data-action="toggle">'+(tomo.tengo?'✓ Lo tengo':'Marcar como tengo')+'</button>';
-      html +=     '<span class="badge '+(tomo.tengo?'ok':'no')+'">'+(tomo.tengo?'✓ LO TIENES':'✗ TE FALTA')+'</span>';
-      html +=   '</div>';
+      html += '<h3 style="margin-top:0">Tomo '+num+'</h3>';
+      html += '<div class="row" style="gap:8px">';
+      html += '<button class="btn '+(tomo.tengo?'green':'')+'" data-action="toggle">'+(tomo.tengo?'✓ Lo tengo':'Marcar como tengo')+'</button>';
+      html += '<span class="badge '+(tomo.tengo?'ok':'no')+'">'+(tomo.tengo?'✓ LO TIENES':'✗ TE FALTA')+'</span>';
+      html += '</div>';
 
-      if (tomo.tengo) {{
+      if (tomo.tengo){
         html += '<div class="cover-spine" style="margin-top:8px">';
-        html +=   '<div class="cover-col"><div class="small" style="margin:6px 0">Portada (completa)</div>';
-        if (tomo.portada) {{
-          html += '<div class="img-frame js-cover-frame"><img class="js-cover-img" src="'+tomo.portada+'" alt="Portada tomo '+num+'"/>';
-          html += '<div class="thumb-tools"><button class="btn" data-action="ver-portada">👁️</button><button class="btn red" data-action="eliminar-portada">🗑️</button></div></div>';
-        }} else {{
+        html += '<div class="cover-col"><div class="small" style="margin:6px 0">Portada (completa)</div>';
+        if (tomo.portada){
+          html += '<div class="img-frame js-cover-frame"><img class="js-cover-img" src="'+tomo.portada+'" alt="Portada tomo '+num+'"/><div class="thumb-tools"><button class="btn" data-action="ver-portada">👁️</button><button class="btn red" data-action="eliminar-portada">🗑️</button></div></div>';
+        } else {
           html += '<label class="img-frame js-cover-frame" style="cursor:pointer"><input type="file" accept="image/*" style="display:none" data-action="subir-portada"/><div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;"><span>📷</span><span>Subir portada</span></div></label>';
-        }}
-        html +=   '</div>';
-        html +=   '<div class="spine-col"><div class="small" style="margin:6px 0">Lomo</div>';
-        if (tomo.lomo) {{
-          html += '<div class="img-frame js-spine-frame"><img class="js-spine-img" src="'+tomo.lomo+'" alt="Lomo tomo '+num+'"/>';
-          html += '<div class="thumb-tools"><button class="btn" data-action="ver-lomo">👁️</button><button class="btn red" data-action="eliminar-lomo">🗑️</button></div></div>';
-        }} else {{
-          html += '<label class="img-frame js-spine-frame" style="cursor:pointer"><input type="file" accept="image/*" style="display:none" data-action="subir-lomo"/><div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;"><span>📷</span><span>Subir lomo</span></div></label>';
-        }}
-        html +=   '</div>';
+        }
         html += '</div>';
-      }}
+        html += '<div class="spine-col"><div class="small" style="margin:6px 0">Lomo</div>';
+        if (tomo.lomo){
+          html += '<div class="img-frame js-spine-frame"><img class="js-spine-img" src="'+tomo.lomo+'" alt="Lomo tomo '+num+'"/><div class="thumb-tools"><button class="btn" data-action="ver-lomo">👁️</button><button class="btn red" data-action="eliminar-lomo">🗑️</button></div></div>';
+        } else {
+          html += '<label class="img-frame js-spine-frame" style="cursor:pointer"><input type="file" accept="image/*" style="display:none" data-action="subir-lomo"/><div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;"><span>📷</span><span>Subir lomo</span></div></label>';
+        }
+        html += '</div></div>';
+      }
 
       html += '<div style="margin-top:10px"><div class="small" style="margin-bottom:6px">Comentario</div><div data-editable="wrap">';
-      if (tomo._editando) {{
-        const safe = (tomo.comentario||'').replace(/[&<>]/g,'');
+      if (tomo._editando){
+        var safe = (tomo.comentario||'').replace(/[&<>]/g,'');
         html += '<textarea data-editable="textarea">'+safe+'</textarea><div class="row" style="gap:8px;margin-top:6px"><button class="btn brand" data-action="guardar-comentario">💾 Guardar</button><button class="btn" data-action="cancelar-comentario">Cancelar</button></div>';
-      }} else {{
-        const safe = tomo.comentario ? tomo.comentario.replace(/[&<>]/g,'') : '';
-        html += '<div class="small" data-action="editar-comentario" style="cursor:pointer;'+(tomo.comentario?'white-space:pre-wrap':'')+'">'+(safe || '<span style="font-style:italic;color:#9ca3af">Haz clic para añadir comentario…</span>')+'</div>';
-      }}
+      } else {
+        var safe2 = tomo.comentario ? tomo.comentario.replace(/[&<>]/g,'') : '';
+        html += '<div class="small" data-action="editar-comentario" style="cursor:pointer;'+(tomo.comentario?'white-space:pre-wrap':'')+'">'+(safe2 || '<span style="font-style:italic;color:#9ca3af">Haz clic para añadir comentario…</span>')+'</div>';
+      }
       html += '</div></div></div>';
       return html;
-    }}
+    }
 
-    function cardHTMLBusqueda(t) {{
-      let html='';
-      html += '<div class="card">';
-      html +=   '<h3 style="margin-top:0">Tomo '+t.numero+'</h3>';
-      html +=   '<div>'+(t.tengo?'<span class="badge ok">✓ LO TIENES</span>':'<span class="badge no">✗ TE FALTA</span>')+'</div>';
-      html +=   '<div class="cover-spine" style="margin-top:8px">';
-      html +=     '<div class="cover-col">';
-      if (t.portada) html += '<div class="img-frame js-cover-frame"><img class="js-cover-img" src="'+t.portada+'" alt="Portada tomo '+t.numero+'"/></div>';
-      else html += '<div class="img-frame js-cover-frame"><div class="small" style="color:#9ca3af">Sin portada</div></div>';
-      html +=     '</div>';
-      html +=     '<div class="spine-col">';
-      if (t.lomo) html += '<div class="img-frame js-spine-frame"><img class="js-spine-img" src="'+t.lomo+'" alt="Lomo tomo '+t.numero+'"/></div>';
-      else html += '<div class="img-frame js-spine-frame"><div class="small" style="color:#9ca3af">Sin lomo</div></div>';
-      html +=     '</div>';
-      html +=   '</div>';
-      if (t.comentario) html += '<div class="small" style="white-space:pre-wrap;margin-top:6px">“'+t.comentario.replace(/[&<>]/g,'')+'”</div>';
-      html += '</div>';
-      return html;
-    }}
-
-    function render() {{
+    function render(){
       renderStats();
-      const entries = Object.entries(state.tomos).filter(([n,t]) => state.filtro==='tengo'?t.tengo : state.filtro==='faltan'?!t.tengo : true);
-      document.getElementById('cards').innerHTML = entries.map(([num, tomo]) => cardHTML(num, tomo)).join('');
-      requestAnimationFrame(syncSpineHeights);
-    }}
+      var html = '';
+      for (var i=1;i<=67;i++){
+        var t = state.tomos[i];
+        if (!t) continue;
+        if (state.filtro==='tengo' && !t.tengo) continue;
+        if (state.filtro==='faltan' && t.tengo) continue;
+        html += cardHTML(i, t);
+      }
+      $('#cards').innerHTML = html;
+      setTimeout(syncSpineHeights, 0);
+    }
 
-    function buscar() {{
-      const nums = parseBusqueda(state.busqueda);
-      if (nums.length === 0) {{ state.resultados=[]; document.getElementById('box-resultados').style.display='none'; return; }}
-      state.resultados = nums.map(n => ({{ numero:n, ...state.tomos[n] }}));
-      document.getElementById('res-title').textContent = 'Resultados de búsqueda ('+state.resultados.length+' tomos)';
-      document.getElementById('res-cards').innerHTML = state.resultados.map(cardHTMLBusqueda).join('');
-      document.getElementById('box-resultados').style.display='block';
-      requestAnimationFrame(syncSpineHeights);
-    }}
+    function buscar(){
+      var nums = parseBusqueda(state.busqueda);
+      var box = $('#box-resultados');
+      if (!nums.length){ state.resultados=[]; box.style.display='none'; return; }
+      var html='';
+      for (var i=0;i<nums.length;i++){
+        var n = nums[i]; var t = state.tomos[n] || emptyTomo();
+        html += cardHTML(n, t);
+      }
+      $('#res-title').textContent = 'Resultados de búsqueda ('+nums.length+' tomos)';
+      $('#res-cards').innerHTML = html;
+      box.style.display='block';
+      setTimeout(syncSpineHeights, 0);
+    }
 
-    function syncSpineHeights() {{
-      document.querySelectorAll('.cover-spine').forEach(pair=>{{
-        const cover = pair.querySelector('.cover-col .js-cover-frame');
-        const spine = pair.querySelector('.spine-col .js-spine-frame');
-        if (!cover || !spine) return;
+    function syncSpineHeights(){
+      var pairs = document.querySelectorAll('.cover-spine');
+      for (var i=0;i<pairs.length;i++){
+        var pair=pairs[i];
+        var cover = pair.querySelector('.cover-col .js-cover-frame');
+        var spine = pair.querySelector('.spine-col .js-spine-frame');
+        if (!cover || !spine) continue;
         spine.style.height='auto';
-        const h = cover.getBoundingClientRect().height;
+        var h = cover.getBoundingClientRect().height;
         if (h>0) spine.style.height = h+'px';
-      }});
-    }}
+      }
+    }
 
-    document.addEventListener('click', (e)=>{{
-      const actionEl = e.target.closest('[data-action]');
-      const card = e.target.closest('.card[data-num]');
-      const num = card ? parseInt(card.getAttribute('data-num'),10) : null;
-      if (actionEl) {{
-        const action = actionEl.getAttribute('data-action');
-        if (action==='toggle' && num) {{ state.tomos[num].tengo=!state.tomos[num].tengo; save(); render(); return; }}
-        if (action==='ver-portada' && num) {{ const t=state.tomos[num]; if (t.portada) showModal(t.portada); return; }}
-        if (action==='eliminar-portada' && num) {{ state.tomos[num].portada=null; save(); render(); return; }}
-        if (action==='ver-lomo' && num) {{ const t=state.tomos[num]; if (t.lomo) showModal(t.lomo); return; }}
-        if (action==='eliminar-lomo' && num) {{ state.tomos[num].lomo=null; save(); render(); return; }}
-        if (action==='editar-comentario' && num) {{ state.tomos[num]._editando=true; render(); return; }}
-        if (action==='guardar-comentario' && num) {{ const ta=card.querySelector('[data-editable="textarea"]'); state.tomos[num].comentario=ta.value; state.tomos[num]._editando=false; save(); render(); return; }}
-        if (action==='cancelar-comentario' && num) {{ state.tomos[num]._editando=false; render(); return; }}
-      }}
-      const filtroBtn = e.target.closest('[data-filtro]');
-      if (filtroBtn) {{ state.filtro=filtroBtn.getAttribute('data-filtro'); document.querySelectorAll('.seg .btn').forEach(b=>b.classList.remove('active')); filtroBtn.classList.add('active'); render(); }}
-      if (e.target.closest('#btn-cerrar-res')) {{ document.getElementById('box-resultados').style.display='none'; state.resultados=[]; state.busqueda=''; document.getElementById('in-busqueda').value=''; }}
-      if (e.target.closest('#btn-buscar')) {{ buscar(); }}
-    }});
+    document.addEventListener('click', function(e){
+      var actionEl = e.target.closest('[data-action]');
+      var card = e.target.closest('.card[data-num]');
+      var num = card ? parseInt(card.getAttribute('data-num'),10) : null;
+      if (actionEl){
+        var action = actionEl.getAttribute('data-action');
+        if (action==='toggle' && num){ state.tomos[num].tengo = !state.tomos[num].tengo; save(); render(); return; }
+        if (action==='ver-portada' && num){ var t=state.tomos[num]; if (t.portada) showModal(t.portada); return; }
+        if (action==='eliminar-portada' && num){ state.tomos[num].portada=null; save(); render(); return; }
+        if (action==='ver-lomo' && num){ var t2=state.tomos[num]; if (t2.lomo) showModal(t2.lomo); return; }
+        if (action==='eliminar-lomo' && num){ state.tomos[num].lomo=null; save(); render(); return; }
+        if (action==='editar-comentario' && num){ state.tomos[num]._editando=true; render(); return; }
+        if (action==='guardar-comentario' && num){ var ta=card.querySelector('[data-editable="textarea"]'); state.tomos[num].comentario=ta.value; state.tomos[num]._editando=false; save(); render(); return; }
+        if (action==='cancelar-comentario' && num){ state.tomos[num]._editando=false; render(); return; }
+      }
+      var filtroBtn = e.target.closest('[data-filtro]');
+      if (filtroBtn){ state.filtro = filtroBtn.getAttribute('data-filtro'); var bs=document.querySelectorAll('.seg .btn'); for (var j=0;j<bs.length;j++) bs[j].classList.remove('active'); filtroBtn.classList.add('active'); render(); }
+      if (e.target.closest('#btn-cerrar-res')){ $('#box-resultados').style.display='none'; state.resultados=[]; state.busqueda=''; $('#in-busqueda').value=''; }
+      if (e.target.closest('#btn-buscar')){ buscar(); }
+    });
 
-    document.addEventListener('change', (e)=>{{
-      const input = e.target.closest('input[type="file"][data-action]');
+    document.addEventListener('change', function(e){
+      var input = e.target.closest('input[type="file"][data-action]');
       if (!input) return;
-      const card = e.target.closest('.card[data-num]'); const num = card?parseInt(card.getAttribute('data-num'),10):null;
-      const act = input.getAttribute('data-action');
-      if (num && input.files && input.files[0] && input.files[0].type.startsWith('image/')) {{
-        const reader = new FileReader();
-        reader.onload = ev => {{ if (act==='subir-portada') state.tomos[num].portada=ev.target.result; if (act==='subir-lomo') state.tomos[num].lomo=ev.target.result; save(); render(); }};
+      var card = e.target.closest('.card[data-num]'); var num = card?parseInt(card.getAttribute('data-num'),10):null;
+      var act = input.getAttribute('data-action');
+      if (num && input.files && input.files[0] && input.files[0].type && input.files[0].type.indexOf('image/')===0){
+        var reader = new FileReader();
+        reader.onload = function(ev){ if (act==='subir-portada') state.tomos[num].portada=ev.target.result; if (act==='subir-lomo') state.tomos[num].lomo=ev.target.result; save(); render(); };
         reader.readAsDataURL(input.files[0]);
-      }}
-    }});
+      }
+    });
 
-    document.getElementById('in-busqueda').addEventListener('input', e=>{{ state.busqueda=e.target.value; }});
-    document.getElementById('in-busqueda').addEventListener('keydown', e=>{{ if (e.key==='Enter') buscar(); }});
+    $('#in-busqueda').addEventListener('input', function(e){ state.busqueda = e.target.value; });
+    $('#in-busqueda').addEventListener('keydown', function(e){ if (e.key==='Enter') buscar(); });
 
-    function showModal(src) {{ const m=document.createElement('div'); m.className='modal'; m.innerHTML='<div><button class="btn close">✖</button><img src="'+src+'" alt="Imagen"/></div>'; m.addEventListener('click',()=>m.remove()); document.body.appendChild(m); }}
+    function showModal(src){
+      var m=document.createElement('div'); m.className='modal'; m.innerHTML='<div><button class="btn close">✖</button><img src="'+src+'" alt="Imagen"/></div>';
+      m.addEventListener('click', function(){ m.remove(); });
+      document.body.appendChild(m);
+    }
 
-    window.addEventListener('resize', ()=>requestAnimationFrame(syncSpineHeights));
+    window.addEventListener('resize', function(){ setTimeout(syncSpineHeights, 0); });
 
     init();
   </script>
