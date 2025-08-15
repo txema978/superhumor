@@ -12,22 +12,16 @@
 
   <style>
 
-    .version-tag {
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      transform: translateY(-50%);
-      background: rgba(0,0,0,0.6);
-      color: #f0f0f0;
-      padding: 3px 6px;
-      font-size: 11px;
-      border-radius: 6px;
-      font-family: monospace;
-      line-height: 1.2;
-      pointer-events: none;
-    }
-    .title-container {
-      position: relative;
+    /* --- Cover + Spine side-by-side layout (v2.5) --- */
+    .cover-spine { display: flex; gap: 10px; align-items: stretch; }
+    .cover-col { flex: 1 1 260px; min-width: 220px; }
+    .spine-col { flex: 0 0 84px; width: 84px; }
+    .spine-col .img-frame { aspect-ratio: 1 / 5; }
+    .img-frame { position:relative; width:100%; background:#f9fafb; border:1px dashed #d1d5db; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .img-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    @media (max-width: 640px) {
+      .cover-spine { flex-wrap: nowrap; }
+      .cover-col { min-width: 0; }
     }
 
 
@@ -156,7 +150,7 @@
             <div style="font-size:28px">📚</div>
             <div>
               <div class="title">Colección Superhumor</div>
-              <div class="sub">Gestiona tu colección completa de 67 tomos</div>
+              <div class="sub">Gestiona tu colección completa de 67 tomos — v2.5</div>
             </div>
           </div>
 
@@ -215,9 +209,11 @@
                 </div>
 
                 ${tomo.tengo ? `
-                <div class="row wrap">
-                  <div style="flex:1 1 220px; min-width: 220px;">
-                    <div class="small" style="margin:6px 0">Portada (se ve completa)</div>
+                
+                ${tomo.tengo ? `
+                <div class="cover-spine">
+                  <div class="cover-col">
+                    <div class="small" style="margin:6px 0">Portada (completa)</div>
                     ${tomo.portada ? `
                       <div class="img-frame">
                         <img src="${tomo.portada}" alt="Portada tomo ${num}" />
@@ -236,10 +232,10 @@
                     `}
                   </div>
 
-                  <div style="flex:1 1 140px; min-width: 160px;">
-                    <div class="small" style="margin:6px 0">Lomo (se ve completo)</div>
+                  <div class="spine-col">
+                    <div class="small" style="margin:6px 0">Lomo</div>
                     ${tomo.lomo ? `
-                      <div class="img-frame" style="aspect-ratio: 1 / 5;">
+                      <div class="img-frame">
                         <img src="${tomo.lomo}" alt="Lomo tomo ${num}" />
                         <div class="thumb-tools">
                           <button class="btn" data-action="ver-lomo" title="Ver grande">👁️</button>
@@ -247,7 +243,7 @@
                         </div>
                       </div>
                     ` : `
-                      <label class="img-frame" style="cursor:pointer; aspect-ratio: 1 / 5;" title="Subir lomo">
+                      <label class="img-frame" style="cursor:pointer" title="Subir lomo">
                         <input type="file" accept="image/*" style="display:none" data-action="subir-lomo"/>
                         <div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;">
                           <span>📷</span><span>Subir lomo</span>
