@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.4d)</title>
+  <title>Colección Superhumor — PWA (v3.4e)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -422,7 +422,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4d</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.4e</div>
       </div>
     </div>
 
@@ -444,30 +444,26 @@
         <div class="small">Sincronización entre dispositivos (opcional)</div>
 
 <script>
-// Recolocar la tarjeta de Sincronización al final (después del progreso)
 (function(){
-  function moveSync(){
+  function moveSyncToBottom(){
     try{
       var wrap = document.querySelector('.wrap') || document.body;
-      var syncStatus = document.getElementById('sync-status');
-      if (!syncStatus) return;
-      var syncCard = syncStatus.closest('.card') || syncStatus.closest('section') || syncStatus;
-      var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
-      var progressCard = cards.find(function(c){ return /Progreso de la colección/i.test(c.textContent||''); });
-      if (wrap && syncCard){
-        if (progressCard && progressCard.parentNode === wrap){
-          wrap.insertBefore(syncCard, progressCard.nextSibling);
-        } else {
-          wrap.appendChild(syncCard);
-        }
-      }
-    }catch(e){/* noop */}
+      var statusEl = document.getElementById('sync-status');
+      if (!statusEl || !wrap) return;
+      var card = statusEl.closest('.card') || statusEl.closest('section') || statusEl;
+      if (!card) return;
+      // Append to end of wrap (bottom of the page)
+      wrap.appendChild(card);
+    }catch(e){}
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', moveSync);
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(moveSyncToBottom, 0); });
   } else {
-    moveSync();
+    setTimeout(moveSyncToBottom, 0);
   }
+  window.addEventListener('load', function(){ setTimeout(moveSyncToBottom, 50); });
+  // Try again shortly after, in case hydration renders late
+  setTimeout(moveSyncToBottom, 300);
 })();
 </script>
 
