@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v3.0)</title>
+  <title>Colección Superhumor — PWA (v3.1)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -48,17 +48,13 @@
     .modal img{max-width:90vw;max-height:90vh;border-radius:12px;display:block}
     .close{position:absolute;right:8px;top:8px}
 
-    /* Image frames */
     .img-frame{position:relative;width:100%;background:#f9fafb;border:1px dashed #d1d5db;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
     .img-frame img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
-    /* Side-by-side cover+spine */
     .cover-spine{display:flex;gap:6px;align-items:stretch}
     .cover-col{flex:1 1 220px;min-width:180px;display:flex;flex-direction:column}
     .spine-col{flex:0 0 50px;width:50px;display:flex;flex-direction:column}
-    /* The cover defines the height via aspect-ratio */
     .cover-col .img-frame{aspect-ratio:3/4;width:100%}
-    /* Make spine match the cover height exactly */
     .spine-col .img-frame{height:100%;width:100%}
 
     .thumb-tools{position:absolute;right:6px;top:6px;display:flex;gap:6px}
@@ -70,7 +66,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.0</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v3.1</div>
       </div>
     </div>
 
@@ -114,10 +110,9 @@
   </div>
 
   <script>
-    // Register SW v30
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker-v30.js').catch(()=>{});
+        navigator.serviceWorker.register('./service-worker-v31.js').catch(()=>{});
       });
     }
 
@@ -139,13 +134,22 @@
     const STORAGE_KEY = "superhumor_v2";
     const state = { tomos:{}, filtro:"todos", busqueda:"", resultados:[], showResultados:false };
 
+    function makeEmptyTomo(){ return { tengo:false, comentario:"", portada:null, lomo:null }; }
+
     function load() { try { const raw=localStorage.getItem(STORAGE_KEY); return raw?JSON.parse(raw):null; } catch(e){ return null; } }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({tomos:state.tomos})); } catch(e){} }
 
+    function ensure67(obj) {
+      if (!obj || typeof obj !== 'object') obj = {};
+      for (let i=1;i<=67;i++){ if (!obj[i]) obj[i] = makeEmptyTomo(); }
+      return obj;
+    }
+
     function init() {
       const saved = load();
-      if (saved && saved.tomos) state.tomos = saved.tomos;
-      else { for (let i=1;i<=67;i++) state.tomos[i] = { tengo:false, comentario:"", portada:null, lomo:null }; }
+      if (saved && saved.tomos) { state.tomos = ensure67(saved.tomos); }
+      else { state.tomos = ensure67(null); }
+      save(); // guarda la normalización
       render();
       syncSpineHeights();
     }
@@ -161,8 +165,7 @@
       $('#st-faltan').textContent = s.faltan;
       $('#st-pct').textContent = s.pct + '%';
       $('#st-cont').textContent = s.tengo + ' de 67 tomos';
-      const seg = document.querySelectorAll('.seg .btn');
-      seg.forEach(btn => {
+      document.querySelectorAll('.seg .btn').forEach(btn => {
         const f = btn.getAttribute('data-filtro');
         btn.classList.toggle('active', f === state.filtro);
         if (f==='tengo') btn.textContent = 'Que tengo ('+s.tengo+')';
@@ -273,7 +276,6 @@
       renderStats();
       const entries = Object.entries(state.tomos).filter(([n,t]) => state.filtro==='tengo'?t.tengo : state.filtro==='faltan'?!t.tengo : true);
       $('#cards').innerHTML = entries.map(([num, tomo]) => cardHTML(num, tomo)).join('');
-      // After render, sync heights
       requestAnimationFrame(syncSpineHeights);
     }
 
@@ -287,19 +289,16 @@
       requestAnimationFrame(syncSpineHeights);
     }
 
-    // Keep spine frames exactly as tall as their sibling cover frames
     function syncSpineHeights() {
       const pairs = document.querySelectorAll('.cover-spine');
       pairs.forEach(pair => {
         const cover = pair.querySelector('.cover-col .js-cover-frame');
         const spine = pair.querySelector('.spine-col .js-spine-frame');
         if (!cover || !spine) return;
-        // Reset then set to measured height
         spine.style.height = 'auto';
         const h = cover.getBoundingClientRect().height;
         if (h > 0) spine.style.height = h + 'px';
       });
-      // Also ensure after images load
       document.querySelectorAll('.js-cover-img, .js-spine-img').forEach(img => {
         img.addEventListener('load', () => {
           const pair = img.closest('.cover-spine');
@@ -314,7 +313,6 @@
       });
     }
 
-    // Events
     document.addEventListener('click', (e) => {
       const actionEl = e.target.closest('[data-action]');
       const card = e.target.closest('.card[data-num]');
@@ -322,9 +320,9 @@
       if (actionEl) {
         const action = actionEl.getAttribute('data-action');
         if (action==='toggle' && num){ state.tomos[num].tengo=!state.tomos[num].tengo; save(); render(); return; }
-        if (action==='ver-portada' && num){ showModal(state.tomos[num].portada); return; }
+        if (action==='ver-portada' && num){ const t=state.tomos[num]; if (t.portada) showModal(t.portada); return; }
         if (action==='eliminar-portada' && num){ state.tomos[num].portada=null; save(); render(); return; }
-        if (action==='ver-lomo' && num){ showModal(state.tomos[num].lomo); return; }
+        if (action==='ver-lomo' && num){ const t=state.tomos[num]; if (t.lomo) showModal(t.lomo); return; }
         if (action==='eliminar-lomo' && num){ state.tomos[num].lomo=null; save(); render(); return; }
         if (action==='editar-comentario' && num){ state.tomos[num]._editando=true; render(); return; }
         if (action==='guardar-comentario' && num){ const ta=card.querySelector('[data-editable="textarea"]'); state.tomos[num].comentario=ta.value; state.tomos[num]._editando=false; save(); render(); return; }
@@ -359,14 +357,12 @@
     $('#in-busqueda').addEventListener('keydown', e => { if (e.key==='Enter') buscar(); });
 
     function showModal(src) {
-      if (!src) return;
       const modal = h('<div class="modal"><div><button class="btn close">✖</button><img src="'+src+'" alt="Imagen"/></div></div>');
       modal.addEventListener('click', () => modal.remove());
       modal.querySelector('.close').addEventListener('click', () => modal.remove());
       document.body.appendChild(modal);
     }
 
-    // Re-sync on resize/orientation change
     window.addEventListener('resize', () => requestAnimationFrame(syncSpineHeights));
   </script>
 </body>
