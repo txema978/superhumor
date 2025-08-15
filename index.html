@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v2.8)</title>
+  <title>Colección Superhumor — PWA (v2.9)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -56,11 +56,21 @@
     .img-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
 
     /* Side-by-side cover+spine */
-    .cover-spine { display:flex; gap:6px; align-items:stretch; }
-    .cover-col { flex: 1 1 220px; min-width: 180px; }
-    .spine-col { flex: 0 0 50px; width: 50px; }
-    .spine-col .img-frame { aspect-ratio: 1 / 6; }
-    .cover-col .img-frame { aspect-ratio: 3 / 4; }
+    .cover-spine {
+display:flex; gap:6px; align-items:stretch;
+}
+    .cover-col {
+flex: 1 1 220px; min-width: 180px; display:flex; flex-direction:column;
+}
+    .spine-col {
+flex: 0 0 50px; width:50px; display:flex; flex-direction:column;
+}
+    .spine-col .img-frame {
+height:100%; width:100%;
+}
+    .cover-col .img-frame {
+aspect-ratio: 3 / 4; width:100%;
+}
 
     .thumb-tools { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
   </style>
@@ -71,7 +81,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v2.8</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v2.9</div>
       </div>
     </div>
 
@@ -118,7 +128,7 @@
     // Register SW with new name (v28) to nuke old cache
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker-v28.js').catch(()=>{});
+        navigator.serviceWorker.register('./service-worker-v29.js').catch(()=>{});
       });
     }
 
