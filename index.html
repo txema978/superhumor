@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colección Superhumor — PWA (v2.7)</title>
+  <title>Colección Superhumor — PWA (v2.8)</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="manifest.webmanifest">
@@ -37,7 +37,7 @@
     input[type="text"]{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); outline:none; }
     input[type="text"]:focus{ border-color:#cbd5e1; }
     .results { background: var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; margin:12px 0; }
-    .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--muted); }
+    .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--border); background:#fff; color:#6b7280; }
     .badge.ok { border-color:#86efac; color:#166534; background:#f0fdf4; }
     .badge.no { border-color:#fecaca; color:#7f1d1d; background:#fef2f2; }
     .cards { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
@@ -50,15 +50,18 @@
     .modal > div { position:relative; max-width: 90vw; max-height:90vh; }
     .modal img { max-width:90vw; max-height:90vh; border-radius:12px; display:block; }
     .close { position:absolute; right:8px; top:8px; }
-    /* Images */
+
+    /* Image frames */
     .img-frame { position:relative; width:100%; background:#f9fafb; border:1px dashed #d1d5db; border-radius:10px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
     .img-frame img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+
     /* Side-by-side cover+spine */
     .cover-spine { display:flex; gap:6px; align-items:stretch; }
     .cover-col { flex: 1 1 220px; min-width: 180px; }
     .spine-col { flex: 0 0 50px; width: 50px; }
     .spine-col .img-frame { aspect-ratio: 1 / 6; }
     .cover-col .img-frame { aspect-ratio: 3 / 4; }
+
     .thumb-tools { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
   </style>
 </head>
@@ -68,7 +71,7 @@
       <div style="font-size:26px">📚</div>
       <div>
         <h1 class="title">Colección Superhumor</h1>
-        <div class="sub">Gestiona tu colección completa de 67 tomos — v2.7</div>
+        <div class="sub">Gestiona tu colección completa de 67 tomos — v2.8</div>
       </div>
     </div>
 
@@ -112,10 +115,10 @@
   </div>
 
   <script>
-    // Register SW with new name to avoid old cache
+    // Register SW with new name (v28) to nuke old cache
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker-v27.js').catch(()=>{});
+        navigator.serviceWorker.register('./service-worker-v28.js').catch(()=>{});
       });
     }
 
@@ -244,6 +247,32 @@
       `;
     }
 
+    function cardHTMLBusqueda(t) {
+      return `
+        <div class="card">
+          <h3 style="margin-top:0">Tomo ${t.numero}</h3>
+          <div>${t.tengo ? '<span class="badge ok">✓ LO TIENES</span>' : '<span class="badge no">✗ TE FALTA</span>'}</div>
+          <div class="cover-spine" style="margin-top:8px">
+            <div class="cover-col">
+              ${t.portada ? `
+                <div class="img-frame">
+                  <img src="${t.portada}" alt="Portada tomo ${t.numero}" />
+                </div>` : `
+                <div class="img-frame"><div class="small" style="color:#9ca3af">Sin portada</div></div>`}
+            </div>
+            <div class="spine-col">
+              ${t.lomo ? `
+                <div class="img-frame">
+                  <img src="${t.lomo}" alt="Lomo tomo ${t.numero}" />
+                </div>` : `
+                <div class="img-frame"><div class="small" style="color:#9ca3af">Sin lomo</div></div>`}
+            </div>
+          </div>
+          ${t.comentario ? `<div class="small" style="white-space:pre-wrap;margin-top:6px">“${t.comentario.replace(/[&<>]/g,'')}”</div>` : ``}
+        </div>
+      `;
+    }
+
     function render() {
       renderStats();
       const entries = Object.entries(state.tomos).filter(([n,t]) => state.filtro==='tengo'?t.tengo : state.filtro==='faltan'?!t.tengo : true);
@@ -255,21 +284,7 @@
       if (nums.length === 0) { state.resultados=[]; state.showResultados=false; $('#box-resultados').style.display='none'; return; }
       state.resultados = nums.map(n => ({ numero:n, ...state.tomos[n] }));
       $('#res-title').textContent = 'Resultados de búsqueda ('+state.resultados.length+' tomos)';
-      $('#res-cards').innerHTML = state.resultados.map(t => `
-        <div class="card">
-          <h3 style="margin-top:0">Tomo ${t.numero}</h3>
-          <div>${t.tengo ? '<span class="badge ok">✓ LO TIENES</span>' : '<span class="badge no">✗ TE FALTA</span>'}</div>
-          ${t.portada ? `
-            <div class="img-frame" data-full="${t.portada}" title="Ver grande" style="aspect-ratio:3/4; margin-top:6px">
-              <img src="${t.portada}" alt="Portada tomo ${t.numero}" />
-            </div>` : ``}
-          ${t.lomo ? `
-            <div class="img-frame" data-full="${t.lomo}" title="Ver grande" style="aspect-ratio:1/6; margin-top:6px">
-              <img src="${t.lomo}" alt="Lomo tomo ${t.numero}" />
-            </div>` : ``}
-          ${t.comentario ? `<div class="small" style="white-space:pre-wrap;margin-top:6px">“${t.comentario.replace(/[&<>]/g,'')}”</div>` : ``}
-        </div>
-      `).join('');
+      $('#res-cards').innerHTML = state.resultados.map(cardHTMLBusqueda).join('');
       $('#box-resultados').style.display='block';
     }
 
@@ -291,8 +306,6 @@
       }
       const filtroBtn = e.target.closest('[data-filtro]');
       if (filtroBtn) { state.filtro = filtroBtn.getAttribute('data-filtro'); document.querySelectorAll('.seg .btn').forEach(b=>b.classList.remove('active')); filtroBtn.classList.add('active'); render(); }
-      const thumb = e.target.closest('.img-frame[data-full]');
-      if (thumb) { showModal(thumb.getAttribute('data-full')); }
       const cerrar = e.target.closest('#btn-cerrar-res');
       if (cerrar) { $('#box-resultados').style.display='none'; state.resultados=[]; state.busqueda=''; $('#in-busqueda').value=''; }
       const buscarBtn = e.target.closest('#btn-buscar');
