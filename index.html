@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Colección Superhumor — PWA</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#2563eb">
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --brand: #2563eb;
+      --green: #16a34a;
+      --red: #dc2626;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text); background: var(--bg);
+    }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .header { display:flex; align-items:center; gap:12px; margin-bottom: 16px; }
+    .title { font-size: clamp(22px, 3vw, 28px); font-weight: 800; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); }
+    .grid3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .stat { background: var(--card); border:1px solid var(--border); border-radius: 14px; padding: 14px; }
+    .stat b { font-size: 22px; }
+    .row { display:flex; gap:12px; align-items:center; }
+    .grow { flex: 1 1 auto; }
+    .card { background: var(--card); border:1px solid var(--border); border-radius: 16px; padding: 14px; display:flex; flex-direction:column; gap:10px; }
+    .card h3 { margin: 0; font-size: 16px; }
+    .btn { border:1px solid var(--border); background:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    .btn:hover { border-color:#cbd5e1; }
+    .btn.brand { background: var(--brand); color:#fff; border-color: transparent; }
+    .btn.green { background: var(--green); color:#fff; border-color: transparent; }
+    .btn.red { background: var(--red); color:#fff; border-color: transparent; }
+    .seg { display:flex; gap:8px; flex-wrap: wrap; }
+    .seg .btn { padding:6px 10px; font-size: 14px; }
+    .seg .btn.active { background: var(--brand); color: #fff; border-color: transparent; }
+    .small { font-size: 12px; color: var(--muted); }
+    input[type="text"]{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); outline:none; }
+    input[type="text"]:focus{ border-color:#cbd5e1; }
+    .results { background: var(--card); border:1px solid var(--border); border-radius: 14px; padding: 12px; }
+    .results h4 { margin: 0 0 8px; }
+    .badge { display:inline-block; font-size: 12px; padding:2px 8px; border-radius: 999px; border:1px solid var(--border); background:#fff; color: var(--muted); }
+    .badge.ok { border-color: #86efac; color:#166534; background:#f0fdf4; }
+    .badge.no { border-color: #fecaca; color:#7f1d1d; background:#fef2f2; }
+    .thumb { position:relative; width: 100%; padding-top: 60%; background:#f3f4f6; border:1px dashed #d1d5db; border-radius: 10px; overflow:hidden; }
+    .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .thumb .tools { position:absolute; right:6px; top:6px; display:flex; gap:6px; }
+    .muted { color: var(--muted); }
+    textarea { width: 100%; min-height: 70px; padding: 10px; border-radius: 10px; border:1px solid var(--border); outline:none; resize: vertical; }
+    .gallery { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .cards { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+    .progress { background:#e5e7eb; border-radius:999px; height: 10px; overflow:hidden; }
+    .progress > div { height:100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: 0%; transition: width .3s ease; }
+    .center { text-align:center; }
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.75);
+      display:flex; align-items:center; justify-content:center; padding: 20px;
+    }
+    .modal > div { position:relative; max-width: 90vw; max-height: 90vh; }
+    .modal img { max-width: 90vw; max-height: 90vh; border-radius: 12px; display:block; }
+    .close { position:absolute; right:8px; top:8px; }
+    @media (max-width: 960px) {
+      .grid3, .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 640px) {
+      .grid3, .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // --- Service worker registration ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .catch(err => console.warn('SW error', err));
+      });
+    }
+
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+
+    function parseBusqueda(text) {
+      const parts = text.split(/[,\s]+/).filter(Boolean);
+      const out = new Set();
+      for (const p of parts) {
+        if (/^\\d+-\\d+$/.test(p)) {
+          const [a, b] = p.split("-").map(n => parseInt(n, 10));
+          if (Number.isInteger(a) && Number.isInteger(b) && a <= b) {
+            for (let i = a; i <= b; i++) out.add(i);
+          }
+        } else if (/^\\d+$/.test(p)) {
+          out.add(parseInt(p, 10));
+        }
+      }
+      return [...out].filter(n => n>=1 && n<=67).sort((x,y)=>x-y);
+    }
+
+    const STORAGE_KEY = "superhumor_v1";
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    }
+    function saveState(state) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch(e) {
+        alert("⚠️ No se pudo guardar (posible límite de almacenamiento, sobre todo si subes muchas fotos).");
+      }
+    }
+
+    const state = {
+      tomos: {},
+      filtro: "todos",
+      busqueda: "",
+      resultados: [],
+      showResultados: false,
+      fotoGrande: null
+    };
+
+    function initState() {
+      const saved = loadState();
+      if (saved && saved.tomos) {
+        state.tomos = saved.tomos;
+      } else {
+        for (let i=1;i<=67;i++) state.tomos[i] = { tengo:false, comentario:"", foto:null };
+      }
+    }
+
+    function render() {
+      const root = $('#app');
+      const stats = getStats();
+      const tomosFiltrados = getTomosFiltrados();
+
+      root.innerHTML = `
+        <div class="wrap">
+          <div class="header">
+            <div style="font-size:28px">📚</div>
+            <div>
+              <div class="title">Colección Superhumor</div>
+              <div class="sub">Gestiona tu colección completa de 67 tomos</div>
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-bottom:12px">
+            <div class="stat"><div class="small">Tomos que tienes</div><b>${stats.tengo}</b></div>
+            <div class="stat"><div class="small">Tomos que faltan</div><b>${stats.faltan}</b></div>
+            <div class="stat"><div class="small">Completado</div><b>${stats.pct}%</b></div>
+          </div>
+
+          <div class="card" style="margin-bottom:12px">
+            <div class="row">
+              <input type="text" class="grow" placeholder="Escribe números (ej: 5, 12, 23-25, 30)" value="${state.busqueda}"/>
+              <button class="btn brand" data-action="buscar">Buscar</button>
+            </div>
+            <div class="small">Puedes buscar uno o varios números separados por comas, espacios o guiones.</div>
+          </div>
+
+          ${state.showResultados ? `
+            <div class="results" style="margin-bottom:12px">
+              <div class="row" style="justify-content:space-between">
+                <h4 class="row" style="gap:8px;margin:0"><span>🔎</span><span>Resultados de búsqueda (${state.resultados.length} tomos)</span></h4>
+                <button class="btn" data-action="cerrar-busqueda">✖ Cerrar</button>
+              </div>
+              <div class="cards" style="margin-top:10px">
+                ${state.resultados.map(t => `
+                  <div class="card">
+                    <h3>Tomo ${t.numero}</h3>
+                    <div>${t.tengo ? '<span class="badge ok">✓ LO TIENES</span>' : '<span class="badge no">✗ TE FALTA</span>'}</div>
+                    ${t.foto ? `
+                      <div class="thumb" data-full="${t.foto}" title="Ver grande">
+                        <img src="${t.foto}" alt="Portada tomo ${t.numero}" />
+                      </div>` : ``}
+                    ${t.comentario ? `<div class="small" style="white-space:pre-wrap">“${escapeHtml(t.comentario)}”</div>` : ``}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ``}
+
+          <div class="seg" style="margin-bottom:12px">
+            <button class="btn ${state.filtro==='todos'?'active':''}" data-filtro="todos">Todos (67)</button>
+            <button class="btn ${state.filtro==='tengo'?'active':''}" data-filtro="tengo">Que tengo (${stats.tengo})</button>
+            <button class="btn ${state.filtro==='faltan'?'active':''}" data-filtro="faltan">Que me faltan (${stats.faltan})</button>
+          </div>
+
+          <div class="cards">
+            ${tomosFiltrados.map(([num, tomo]) => `
+              <div class="card" data-num="${num}">
+                <h3>Tomo ${num}</h3>
+                <div class="row" style="gap:8px">
+                  <button class="btn ${tomo.tengo?'green':''}" data-action="toggle">${tomo.tengo ? '✓ Lo tengo' : 'Marcar como tengo'}</button>
+                  <span class="badge ${tomo.tengo?'ok':'no'}">${tomo.tengo ? '✓ LO TIENES' : '✗ TE FALTA'}</span>
+                </div>
+
+                ${tomo.tengo ? `
+                <div>
+                  <div class="small" style="margin-bottom:6px">Portada</div>
+                  ${tomo.foto ? `
+                    <div class="thumb">
+                      <img src="${tomo.foto}" alt="Portada tomo ${num}" />
+                      <div class="tools">
+                        <button class="btn" data-action="ver-foto" title="Ver grande">👁️</button>
+                        <button class="btn red" data-action="eliminar-foto" title="Eliminar foto">🗑️</button>
+                      </div>
+                    </div>
+                  ` : `
+                    <label class="thumb" style="display:block; cursor:pointer" title="Subir portada">
+                      <input type="file" accept="image/*" style="display:none" data-action="subir-foto"/>
+                      <div class="center" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;color:#6b7280;">
+                        <span>📷</span><span>Subir portada</span>
+                      </div>
+                    </label>
+                  `}
+                </div>` : ``}
+
+                <div>
+                  <div class="small" style="margin-bottom:6px">Comentario</div>
+                  <div data-editable="wrap">
+                    ${tomo._editando ? `
+                      <textarea data-editable="textarea">${escapeHtml(tomo.comentario||'')}</textarea>
+                      <div class="row" style="gap:8px; margin-top:6px">
+                        <button class="btn brand" data-action="guardar-comentario">💾 Guardar</button>
+                        <button class="btn" data-action="cancelar-comentario">Cancelar</button>
+                      </div>
+                    ` : `
+                      <div class="muted" data-action="editar-comentario" style="cursor:pointer; ${tomo.comentario?'white-space:pre-wrap':''}">
+                        ${tomo.comentario ? escapeHtml(tomo.comentario) : '<span style="font-style:italic">Haz clic para añadir comentario…</span>'}
+                      </div>
+                    `}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${tomosFiltrados.length === 0 ? `<div class="card center">No hay tomos que mostrar con el filtro actual</div>` : ``}
+
+          <div class="card" style="margin-top:12px">
+            <div class="row" style="justify-content:space-between">
+              <span class="small">Progreso de la colección</span>
+              <span class="small">${stats.tengo} de 67 tomos</span>
+            </div>
+            <div class="progress"><div style="width:${(stats.tengo/67*100).toFixed(2)}%"></div></div>
+          </div>
+
+          ${state.fotoGrande ? `
+            <div class="modal" data-action="cerrar-modal">
+              <div>
+                <button class="btn close" data-action="cerrar-modal">✖</button>
+                <img src="${state.fotoGrande}" alt="Portada completa"/>
+              </div>
+            </div>
+          ` : ``}
+        </div>
+      `;
+
+      const input = $('input[type="text"]', root);
+      if (input) {
+        input.addEventListener('input', e => { state.busqueda = e.target.value; });
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+      }
+      root.addEventListener('click', onClick);
+      root.addEventListener('change', onChange);
+    }
+
+    function escapeHtml(s) {
+      return (s||'').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    function getStats() {
+      const tengo = Object.values(state.tomos).filter(t=>t.tengo).length;
+      return { tengo, faltan: 67 - tengo, pct: Math.round((tengo/67)*100) };
+    }
+
+    function getTomosFiltrados() {
+      const entries = Object.entries(state.tomos);
+      if (state.filtro === 'tengo') return entries.filter(([n,t]) => t.tengo);
+      if (state.filtro === 'faltan') return entries.filter(([n,t]) => !t.tengo);
+      return entries;
+    }
+
+    function buscar() {
+      const nums = parseBusqueda(state.busqueda);
+      if (nums.length === 0) {
+        state.resultados = [];
+        state.showResultados = false;
+        render();
+        return;
+      }
+      state.resultados = nums.map(n => ({ numero:n, ...state.tomos[n] }));
+      state.showResultados = true;
+      render();
+    }
+
+    function onClick(e) {
+      const actionEl = e.target.closest('[data-action]');
+      if (actionEl) {
+        const action = actionEl.getAttribute('data-action');
+        const card = e.target.closest('.card[data-num]');
+        const num = card ? parseInt(card.getAttribute('data-num'),10) : null;
+
+        if (action === 'buscar') { buscar(); return; }
+        if (action === 'cerrar-busqueda') { state.showResultados = false; state.busqueda = ''; state.resultados = []; render(); return; }
+        if (action === 'toggle' && num) {
+          state.tomos[num].tengo = !state.tomos[num].tengo;
+          saveState({ tomos: state.tomos });
+          render();
+          return;
+        }
+        if (action === 'ver-foto' && num) { state.fotoGrande = state.tomos[num].foto; render(); return; }
+        if (action === 'eliminar-foto' && num) { state.tomos[num].foto = null; saveState({ tomos: state.tomos }); render(); return; }
+        if (action === 'editar-comentario' && num) { state.tomos[num]._editando = true; render(); return; }
+        if (action === 'guardar-comentario' && num) {
+          const wrap = e.target.closest('[data-editable="wrap"]');
+          const ta = $('[data-editable="textarea"]', wrap);
+          state.tomos[num].comentario = ta.value;
+          state.tomos[num]._editando = false;
+          saveState({ tomos: state.tomos });
+          render();
+          return;
+        }
+        if (action === 'cancelar-comentario' && num) { state.tomos[num]._editando = false; render(); return; }
+        if (action === 'cerrar-modal') { state.fotoGrande = null; render(); return; }
+      }
+
+      const filtroBtn = e.target.closest('[data-filtro]');
+      if (filtroBtn) {
+        state.filtro = filtroBtn.getAttribute('data-filtro');
+        render();
+      }
+
+      const thumb = e.target.closest('.thumb');
+      if (thumb && thumb.hasAttribute('data-full')) {
+        state.fotoGrande = thumb.getAttribute('data-full');
+        render();
+      }
+    }
+
+    function onChange(e) {
+      const input = e.target.closest('input[type="file"][data-action="subir-foto"]');
+      if (input) {
+        const card = input.closest('.card[data-num]');
+        const num = card ? parseInt(card.getAttribute('data-num'),10) : null;
+        if (num && input.files && input.files[0] && input.files[0].type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            state.tomos[num].foto = ev.target.result;
+            saveState({ tomos: state.tomos });
+            render();
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+    }
+
+    initState();
+    render();
+  </script>
+</body>
+</html>
