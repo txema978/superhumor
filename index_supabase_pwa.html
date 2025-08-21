@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Superhumor (Supabase)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#111827"/>
+
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#121a2b; --panel-2:#0f1625; --muted:#7c8599;
+      --text:#ebf0ff; --brand:#3b82f6; --ok:#16a34a; --warn:#f59e0b; --danger:#ef4444;
+      --card:#0f172a; --border:#223049;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial}
+    a{color:var(--brand);text-decoration:none}
+    .appbar{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--bg),rgba(11,18,32,.85));backdrop-filter:saturate(1.1) blur(8px);border-bottom:1px solid var(--border)}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px 16px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .title{font-size:22px;font-weight:700}
+    .debug{font-size:12px;background:#1f2937;color:#9ca3af;border:1px solid #334155;border-radius:999px;padding:6px 10px}
+    .search{flex:1;display:flex;gap:8px}
+    .input{appearance:none;outline:none;border:1px solid var(--border);background:var(--panel-2);color:var(--text);border-radius:10px;padding:10px 12px;width:100%}
+    .btn{appearance:none;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:10px 14px;cursor:pointer}
+    .btn.primary{background:var(--brand);border-color:transparent;color:white}
+    .btn.small{padding:8px 10px;font-size:13px}
+    .btn.ghost{background:transparent;border-color:var(--border)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}
+    @media (max-width:1200px){.grid{grid-template-columns:repeat(8,1fr)}}
+    @media (max-width:900px){.grid{grid-template-columns:repeat(6,1fr)}}
+    @media (max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+    .card{grid-column:span 4;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+    .card .hd{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .card .hd .id{font:12px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--muted)}
+    .card .hd .t{font-weight:700}
+    .card .ct{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+    .imgbox{display:flex;gap:10px;align-items:flex-start}
+    .img{width:220px;height:220px;border-radius:10px;border:1px dashed var(--border);background:var(--panel-2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#94a3b8}
+    .img.empty{background-image:linear-gradient(135deg,transparent 25%,rgba(255,255,255,.04) 25%,rgba(255,255,255,.04) 50%,transparent 50%,transparent 75%,rgba(255,255,255,.04) 75%);background-size:18px 18px}
+    .col{flex:1;min-width:180px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font:12px/1.2 ui-sans-serif;background:#1f2937;border:1px solid #334155;color:#9ca3af}
+    .ok{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.35);color:#86efac}
+    .danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fca5a5}
+    .muted{color:var(--muted)}
+    .hr{height:1px;background:var(--border);margin:6px 0}
+    .row2{display:flex;gap:8px;flex-wrap:wrap}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .float-edit{position:fixed;right:16px;bottom:16px;z-index:20}
+    .note{font-size:12px;color:var(--muted)}
+    .login{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:18px}
+    .login .box{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+    .pill{padding:.3rem .6rem;border:1px solid var(--border);border-radius:999px;background:var(--panel-2);font:12px/1.2 ui-sans-serif;color:var(--muted)}
+    .hidden{display:none !important}
+  </style>
+</head>
+
+<body>
+  <!-- TOP BAR -->
+  <div class="appbar">
+    <div class="wrap">
+      <div class="row">
+        <div class="title">Superhumor (Supabase)</div>
+        <span class="pill" id="esm-badge" title="Cargado con supabase-js vía CDN">ESM</span>
+        <div class="search">
+          <input id="q" class="input" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)" />
+          <button class="btn" id="btnBuscar">Buscar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="estado" class="note">Cargando…</div>
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <div class="float-edit">
+    <button class="btn primary" id="btnEditar">Editar</button>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="login" class="login">
+    <div class="box">
+      <div style="font-weight:700">Iniciar sesión (admin)</div>
+      <input id="email" class="input" type="email" placeholder="tu email supabase" />
+      <input id="pass" class="input" type="password" placeholder="tu contraseña" />
+      <div class="row2">
+        <button class="btn primary" id="doLogin">Entrar</button>
+        <button class="btn ghost" id="doLogout">Salir</button>
+        <span id="loginMsg" class="note"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase JS + env -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="env.js"></script>
+
+  <script>
+  (function(){
+    // ---- Comprobación env.js
+    if(!window.env || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY){
+      alert("Falta configurar .env.js con SUPABASE_URL y SUPABASE_ANON_KEY");
+      return;
+    }
+
+    // ---- Cliente Supabase
+    const supabase = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+
+    // ---- DOM
+    const grid = document.getElementById('grid');
+    const estado = document.getElementById('estado');
+    const q = document.getElementById('q');
+    const btnBuscar = document.getElementById('btnBuscar');
+    const btnEditar = document.getElementById('btnEditar');
+    const login = document.getElementById('login');
+    const doLogin = document.getElementById('doLogin');
+    const doLogout = document.getElementById('doLogout');
+    const email = document.getElementById('email');
+    const pass = document.getElementById('pass');
+    const loginMsg = document.getElementById('loginMsg');
+
+    let loggedIn = false;
+    let currentUser = null;
+    let allTomos = []; // [{id,titulo,portada_url,lomo_url},...]
+
+    // --------- Helpers UI ----------
+    function fmtTitulo(n){
+      return `Super Humor nº${n}`;
+    }
+    function badge(txt, ok){
+      return `<span class="badge ${ok?'ok':''}">${ok?'✓':''} ${txt}</span>`;
+    }
+    function c(el, cls){ if(cls) el.className = cls; return el; }
+    function el(tag, cls, html){ const x=document.createElement(tag); if(cls) x.className=cls; if(html!=null) x.innerHTML=html; return x; }
+    function loading(text){ estado.textContent = text || 'Cargando…'; }
+
+    // --------- Auth ----------
+    async function refreshAuthUI(){
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUser = user || null;
+      loggedIn = !!user;
+      btnEditar.textContent = loggedIn ? 'Cerrar edición' : 'Editar';
+      login.classList.add('hidden'); loginMsg.textContent='';
+      render(); // re-pinta para mostrar/ocultar botones de subir
+    }
+
+    btnEditar.onclick = async ()=>{
+      const { data: { user } } = await supabase.auth.getUser();
+      if(user){
+        // si estaba editando, oculta edición (pero no cierra sesión)
+        login.classList.add('hidden');
+        // Si prefieres cerrar sesión realmente:
+        // await supabase.auth.signOut(); refreshAuthUI();
+      }else{
+        login.classList.remove('hidden');
+      }
+    };
+
+    doLogin.onclick = async ()=>{
+      loginMsg.textContent='…';
+      const { error } = await supabase.auth.signInWithPassword({ email: email.value.trim(), password: pass.value });
+      if(error){ loginMsg.textContent=error.message; return; }
+      loginMsg.textContent='Ok'; await refreshAuthUI();
+    };
+
+    doLogout.onclick = async ()=>{
+      await supabase.auth.signOut();
+      await refreshAuthUI();
+    };
+
+    // --------- Datos ----------
+    async function fetchTomos(){
+      // Lee lo que tengas en BD (id, titulo, portada_url, lomo_url)
+      const { data, error } = await supabase.from('tomos')
+        .select('id,titulo,portada_url,lomo_url')
+        .order('id',{ascending:true})
+        .limit(200);
+
+      if(error){ loading('Error cargando tomos'); console.error(error); return []; }
+
+      const map = new Map();
+      (data||[]).forEach(r => map.set(r.id, r));
+
+      // crea placeholders 1..67 (o amplía si quieres)
+      const MAX=67;
+      const out = [];
+      for(let i=1;i<=MAX;i++){
+        const row = map.get(i) || { id:i, titulo:fmtTitulo(i), portada_url:null, lomo_url:null };
+        out.push(row);
+      }
+      return out;
+    }
+
+    function render(){
+      grid.innerHTML = '';
+      const term = (q.value||'').trim();
+      const list = term ? filterByTerm(allTomos, term) : allTomos.slice();
+
+      list.forEach(tomo=>{
+        grid.appendChild(renderCard(tomo));
+      });
+      estado.textContent = list.length ? '' : 'Sin resultados';
+    }
+
+    function filterByTerm(items, term){
+      // números separados por coma y/o rangos (ej. "5, 12, 30-33")
+      try{
+        const wanted = new Set();
+        term.split(',').map(s=>s.trim()).filter(Boolean).forEach(p=>{
+          if(p.includes('-')){
+            const [a,b] = p.split('-').map(x=>parseInt(x,10));
+            const min = Math.min(a,b), max=Math.max(a,b);
+            for(let i=min;i<=max;i++) wanted.add(i);
+          }else{
+            wanted.add(parseInt(p,10));
+          }
+        });
+        return items.filter(x => wanted.has(x.id));
+      }catch(e){
+        return items;
+      }
+    }
+
+    function renderCard(t){
+      const card = el('div','card');
+
+      const hd = el('div','hd');
+      hd.appendChild(el('div','id',`id: ${t.id}`));
+      hd.appendChild(el('div','t',t.titulo || fmtTitulo(t.id)));
+      card.appendChild(hd);
+
+      const ct = el('div','ct');
+
+      // PORTADA + LOMO columnas
+      const zone = el('div','imgbox');
+
+      // Portada
+      const portadaCol = el('div','col');
+      portadaCol.appendChild(el('div',null,'Portada'));
+      const portada = el('div','img '+(t.portada_url?'':'empty'));
+      if(t.portada_url) portada.style.backgroundImage = `url("${t.portada_url}")`;
+      portadaCol.appendChild(portada);
+      portadaCol.appendChild(el('div', 'row2', badge(t.portada_url?'Portada OK':'Sin portada', !!t.portada_url)));
+      // Botones de subir si logueado
+      const pBtns = el('div','actions');
+      if(loggedIn){
+        const bSubir = el('button','btn small','📷 Subir portada');
+        bSubir.onclick = ()=>pickAndUpload(t.id,'portada_url', url=>{
+          t.portada_url=url; render();
+        });
+        const bBorrar = el('button','btn small ghost','🗑️ Quitar portada');
+        bBorrar.onclick = ()=>updateField(t.id,'portada_url',null, ()=>{ t.portada_url=null; render(); });
+        pBtns.appendChild(bSubir); pBtns.appendChild(bBorrar);
+      }
+      portadaCol.appendChild(pBtns);
+
+      // Lomo
+      const lomoCol = el('div','col');
+      lomoCol.appendChild(el('div',null,'Lomo'));
+      const lomo = el('div','img '+(t.lomo_url?'':'empty'));
+      if(t.lomo_url) lomo.style.backgroundImage = `url("${t.lomo_url}")`;
+      lomoCol.appendChild(lomo);
+      lomoCol.appendChild(el('div','row2', badge(t.lomo_url?'Lomo OK':'Sin lomo', !!t.lomo_url)));
+      const lBtns = el('div','actions');
+      if(loggedIn){
+        const bSubir = el('button','btn small','📷 Subir lomo');
+        bSubir.onclick = ()=>pickAndUpload(t.id,'lomo_url', url=>{
+          t.lomo_url=url; render();
+        });
+        const bBorrar = el('button','btn small ghost','🗑️ Quitar lomo');
+        bBorrar.onclick = ()=>updateField(t.id,'lomo_url',null, ()=>{ t.lomo_url=null; render(); });
+        lBtns.appendChild(bSubir); lBtns.appendChild(bBorrar);
+      }
+      lomoCol.appendChild(lBtns);
+
+      zone.appendChild(portadaCol);
+      zone.appendChild(lomoCol);
+      ct.appendChild(zone);
+
+      // Comentario / Lo tengo (localStorage)
+      ct.appendChild(el('div','hr'));
+      const localKey = `tomo:${t.id}`;
+      const saved = JSON.parse(localStorage.getItem(localKey) || '{}');
+      const rowLocal = el('div','row2');
+      const tengo = el('button','btn small '+(saved.tengo?'primary':''), saved.tengo?'✓ Lo tienes':'✗ Te falta');
+      tengo.onclick = ()=>{
+        saved.tengo = !saved.tengo;
+        localStorage.setItem(localKey, JSON.stringify(saved));
+        tengo.classList.toggle('primary', !!saved.tengo);
+        tengo.textContent = saved.tengo ? '✓ Lo tienes' : '✗ Te falta';
+      };
+      const com = el('input','input'); com.placeholder='Comentario (solo local)'; com.value=saved.comentario||'';
+      com.onchange = ()=>{ saved.comentario=com.value; localStorage.setItem(localKey, JSON.stringify(saved)); };
+      rowLocal.appendChild(tengo); rowLocal.appendChild(com);
+      ct.appendChild(rowLocal);
+
+      card.appendChild(ct);
+      return card;
+    }
+
+    // ---- Subidas a Storage y update de campo ----
+    async function pickAndUpload(id, field, onDone){
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.onchange = async (e)=>{
+        const f = e.target.files?.[0];
+        if(!f) return;
+        const now = Date.now();
+        const clean = f.name.replace(/[^\w\.\-]+/g,'_');
+        const path = `uploads/${now}_${clean}`;
+        // subir
+        const up = await supabase.storage.from('imagenes').upload(path, f, { upsert:false, cacheControl:'3600' });
+        if(up.error){ alert('Error subiendo: '+up.error.message); return; }
+        // url pública
+        const pub = supabase.storage.from('imagenes').getPublicUrl(path);
+        const url = pub?.data?.publicUrl;
+        if(!url){ alert('No se pudo obtener URL pública'); return; }
+
+        // actualizar campo
+        await updateField(id, field, url, ()=> onDone && onDone(url));
+      };
+      input.click();
+    }
+
+    async function updateField(id, field, value, onOK){
+      const { error } = await supabase.from('tomos').update({ [field]: value }).eq('id', id);
+      if(error){ alert('Error guardando: '+error.message); return; }
+      onOK && onOK();
+    }
+
+    // ---- Buscar
+    btnBuscar.onclick = render;
+    q.addEventListener('keydown', (e)=>{ if(e.key==='Enter') render(); });
+
+    // ---- Init
+    (async ()=>{
+      loading('Cargando…');
+      await refreshAuthUI(); // pinta estado inicial (no bloquea)
+      allTomos = await fetchTomos();
+      render();
+    })();
+
+  })();
+  </script>
+</body>
+</html>
