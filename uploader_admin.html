@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin · Subir imágenes a Supabase</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:720px;margin:0 auto}
+    h1{margin:0 0 8px}
+    .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:12px 0;background:#fff}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    input[type="email"],input[type="password"],input[type="file"]{padding:10px;border:1px solid #d1d5db;border-radius:8px}
+    button{padding:10px 14px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}
+    button.secondary{background:#6b7280}
+    .muted{color:#6b7280;font-size:14px}
+    .ok{color:#166534}
+    .err{color:#b91c1c}
+    img.preview{max-width:280px;margin-top:10px;border:1px solid #e5e7eb;border-radius:8px}
+    code{background:#f3f4f6;padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <h1>Subir imágenes (bucket <code>imagenes</code>)</h1>
+  <p class="muted">Página de administración privada para subir portadas y lomos. Primero inicia sesión con tu usuario de Supabase.</p>
+
+  <div class="card">
+    <h3>1) Iniciar sesión</h3>
+    <div class="row">
+      <input id="email" type="email" placeholder="tu email" value="txema978@gmail.com">
+      <input id="password" type="password" placeholder="tu contraseña">
+      <button id="btnLogin">Entrar</button>
+      <button id="btnLogout" class="secondary" style="display:none">Salir</button>
+    </div>
+    <p id="loginMsg" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h3>2) Subir imagen</h3>
+    <div class="row">
+      <input id="file" type="file" accept="image/*">
+      <button id="btnUpload">Subir</button>
+    </div>
+    <p id="uploadMsg" class="muted"></p>
+    <img id="preview" class="preview" style="display:none">
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    const SUPABASE_URL = "https://qjmugmnrgxccliyrlwfz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo";
+    const BUCKET = "imagenes";
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const $ = (id)=>document.getElementById(id);
+
+    async function refreshButtons(){
+      const { data:{ session } } = await client.auth.getSession();
+      $('btnLogin').style.display = session ? 'none' : 'inline-block';
+      $('btnLogout').style.display = session ? 'inline-block' : 'none';
+      if(session){
+        $('loginMsg').innerHTML = `✅ Sesión activa: <code>${session.user.email}</code> (uid: <code>${session.user.id}</code>)`;
+        $('loginMsg').className = 'ok';
+      }else{
+        $('loginMsg').textContent = 'No hay sesión iniciada.';
+        $('loginMsg').className = 'muted';
+      }
+    }
+
+    $('btnLogin').addEventListener('click', async ()=>{
+      $('loginMsg').textContent = 'Iniciando sesión…';
+      try{
+        const { error } = await client.auth.signInWithPassword({
+          email: $('email').value.trim(),
+          password: $('password').value
+        });
+        if(error) throw error;
+        $('loginMsg').textContent = 'Sesión iniciada.';
+        $('loginMsg').className = 'ok';
+      }catch(e){
+        $('loginMsg').textContent = 'Error: ' + e.message;
+        $('loginMsg').className = 'err';
+      }
+      refreshButtons();
+    });
+
+    $('btnLogout').addEventListener('click', async ()=>{
+      await client.auth.signOut();
+      $('loginMsg').textContent = 'Sesión cerrada.';
+      $('loginMsg').className = 'muted';
+      refreshButtons();
+    });
+
+    $('btnUpload').addEventListener('click', async ()=>{
+      $('uploadMsg').textContent = '';
+      $('preview').style.display = 'none';
+      const file = $('file').files[0];
+      if(!file){ $('uploadMsg').textContent = 'Selecciona una imagen.'; return; }
+
+      const { data:{ session } } = await client.auth.getSession();
+      if(!session){ $('uploadMsg').textContent = 'Debes iniciar sesión primero.'; $('uploadMsg').className='err'; return; }
+
+      $('uploadMsg').textContent = 'Subiendo…';
+      $('uploadMsg').className = 'muted';
+
+      const path = `uploads/${Date.now()}_${file.name}`;
+      const { error, data } = await client.storage.from(BUCKET).upload(path, file, {
+        upsert: false,
+        cacheControl: '3600',
+        contentType: file.type || 'image/jpeg'
+      });
+
+      if(error){
+        $('uploadMsg').textContent = 'Error: ' + error.message;
+        $('uploadMsg').className = 'err';
+        return;
+      }
+
+      const pub = client.storage.from(BUCKET).getPublicUrl(data.path).data.publicUrl;
+      $('uploadMsg').innerHTML = `✅ Subida OK<br><a href="${pub}" target="_blank">${pub}</a>`;
+      $('uploadMsg').className = 'ok';
+      $('preview').src = pub;
+      $('preview').style.display = 'block';
+    });
+
+    refreshButtons();
+  </script>
+</body>
+</html>
