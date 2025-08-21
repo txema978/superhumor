@@ -1,153 +1,66 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Superhumor (Supabase)</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" />
-<style>
-  :root{--bg:#0f172a;--panel:#111827;--muted:#94a3b8;--text:#e5e7eb;--brand:#60a5fa;--ok:#22c55e;--err:#ef4444}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif}
-  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#0b1220,#0f172a);border-bottom:1px solid #1f2937}
-  .bar{display:flex;align-items:center;gap:12px;padding:14px 16px;max-width:1200px;margin:0 auto}
-  .brand{font-weight:700;color:#fff}
-  input[type="text"]{flex:1;background:#0b1020;border:1px solid #1f2937;border-radius:10px;color:var(--text);padding:12px 14px;outline:none}
-  input[type="text"]::placeholder{color:var(--muted)}
-  button.search{background:#1f2937;color:#fff;border:1px solid #334155;border-radius:10px;padding:12px 16px;cursor:pointer}
-  main{max-width:1200px;margin:0 auto;padding:18px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-  .card{background:var(--panel);border:1px solid #1f2937;border-radius:12px;overflow:hidden}
-  .imgwrap{display:flex;gap:8px;justify-content:center;align-items:flex-start;background:#0b1020}
-  .imgwrap img{max-height:220px;object-fit:contain;background:#0b1020}
-  .meta{padding:12px}
-  .id{font-size:14px;color:var(--muted)}
-  .title{font-weight:600;margin-top:4px}
-  .top-right{position:fixed;right:16px;bottom:16px}
-  .btn{background:#1f2937;border:1px solid #334155;color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none}
-  .muted{color:var(--muted)}
-  .row{display:flex;gap:10px;align-items:center}
-  .hidden{display:none}
-  .status{margin:10px 0 0 0;font-size:14px}
-</style>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Superhumor (Supabase)</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#1c1f26; color:white; }
+    header { padding:10px; font-size:20px; font-weight:bold; }
+    #resultados { margin:20px; }
+    .tomo { padding:8px; border-bottom:1px solid #444; }
+    input, button { padding:6px; margin:5px; }
+  </style>
 </head>
 <body>
-  <header>
-    <div class="bar">
-      <div class="brand">Superhumor (Supabase)</div>
-      <input id="q" type="text" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)" />
-      <button class="search" id="btnBuscar">Buscar</button>
-    </div>
-  </header>
+  <header>Superhumor (Supabase)</header>
+  <input type="text" id="busqueda" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)">
+  <button onclick="buscar()">Buscar</button>
+  <div id="resultados">Cargando...</div>
+  <button onclick="editar()" style="position:fixed; bottom:10px; right:10px;">Editar</button>
 
-  <main>
-    <div id="estado" class="status muted">Cargando…</div>
-    <div id="grid" class="grid"></div>
-  </main>
+  <!-- Cliente Supabase desde la CDN (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    // Configuración Supabase (usa tus claves reales)
+    const SUPABASE_URL = "https://qjmugmnrgxccliyrlwfz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo";
 
-  <div class="top-right">
-    <a class="btn" href="uploader_admin.html">Editar</a>
-  </div>
+    // Crear cliente
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-<script>
-// ====== CONFIG (tu proyecto) ======
-const SUPABASE_URL = "https://qjmugmnrgxccliyrlwfz.supabase.co";
-// Clave anon que compartiste en el chat (segura para frontend)
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo";
+    async function cargarTomos() {
+      document.getElementById("resultados").innerText = "Cargando...";
+      const { data, error } = await supabase.from("tomos").select("*").order("numero", { ascending: true });
 
-const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ====== Utilidades ======
-function parseNumbers(text){
-  // Acepta "5, 8-10, 13 20"
-  const out = new Set();
-  const parts = (text||"").split(/[,\s]+/).filter(Boolean);
-  for(const p of parts){
-    const m = p.match(/^(\d+)\s*-\s*(\d+)$/);
-    if(m){
-      const a = parseInt(m[1],10), b = parseInt(m[2],10);
-      if(!Number.isNaN(a) && !Number.isNaN(b)){
-        const [min,max] = a<=b?[a,b]:[b,a];
-        for(let i=min;i<=max;i++) out.add(i);
+      if (error) {
+        console.error(error);
+        document.getElementById("resultados").innerText = "Error cargando tomos";
+        return;
       }
-    }else{
-      const n = parseInt(p,10);
-      if(!Number.isNaN(n)) out.add(n);
+
+      if (!data || data.length === 0) {
+        document.getElementById("resultados").innerText = "No hay tomos guardados";
+        return;
+      }
+
+      let html = "";
+      data.forEach(tomo => {
+        html += `<div class="tomo">Tomo ${tomo.numero}: ${tomo.titulo || "Sin título"}</div>`;
+      });
+      document.getElementById("resultados").innerHTML = html;
     }
-  }
-  return [...out];
-}
 
-function h(tag, attrs={}, ...children){
-  const el = document.createElement(tag);
-  for(const [k,v] of Object.entries(attrs)){
-    if(k === "class") el.className = v;
-    else if(k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
-    else el.setAttribute(k, v);
-  }
-  for(const c of children){
-    if(c==null) continue;
-    el.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
-  }
-  return el;
-}
-
-function renderTomos(data){
-  const grid = document.getElementById("grid");
-  grid.innerHTML = "";
-  if(!data || data.length===0){
-    grid.appendChild(h("div",{class:"muted"}, "No hay resultados."));
-    return;
-  }
-  for(const t of data){
-    const portada = t.portada_url || "https://via.placeholder.com/150?text=Portada";
-    const lomo = t.lomo_url || "https://via.placeholder.com/80x180?text=Lomo";
-    grid.appendChild(
-      h("div",{class:"card"},
-        h("div",{class:"imgwrap"},
-          h("img",{src:lomo, alt:`Lomo ${t.id}`}),
-          h("img",{src:portada, alt:`Portada ${t.id}`})
-        ),
-        h("div",{class:"meta"},
-          h("div",{class:"id"}, `Tomo #${t.id}`),
-          h("div",{class:"title"}, t.titulo || "Sin título")
-        )
-      )
-    );
-  }
-}
-
-// ====== Carga ======
-async function cargar(query){
-  const estado = document.getElementById("estado");
-  estado.textContent = "Cargando…";
-  let data, error;
-  try{
-    const numeros = parseNumbers(query);
-    if(numeros.length>0){
-      ({ data, error } = await client.from("tomos").select("*").in("id", numeros).order("id",{ascending:true}));
-    }else{
-      ({ data, error } = await client.from("tomos").select("*").order("id",{ascending:true}));
+    function buscar() {
+      const q = document.getElementById("busqueda").value.trim();
+      alert("La búsqueda aún no está implementada. Escribe: " + q);
     }
-    if(error) throw error;
-    renderTomos(data);
-    estado.textContent = `Mostrando ${data.length} tomo(s)`;
-  }catch(e){
-    console.error(e);
-    estado.innerHTML = `<span style="color:var(--err)">Error:</span> ${e.message || e}`;
-  }
-}
 
-document.getElementById("btnBuscar").addEventListener("click", () => {
-  const q = document.getElementById("q").value;
-  cargar(q);
-});
-document.getElementById("q").addEventListener("keydown", (ev)=>{
-  if(ev.key === "Enter"){ cargar(document.getElementById("q").value); }
-});
+    function editar() {
+      alert("Modo edición aún en construcción");
+    }
 
-// Primera carga
-cargar("");
-</script>
+    cargarTomos();
+  </script>
 </body>
 </html>
