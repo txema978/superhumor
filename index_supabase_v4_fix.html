@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superhumor (Supabase)</title>
+  <style>
+    :root { --bg:#171a1f; --fg:#e6e8eb; --muted:#97a2b0; --accent:#4da3ff; --card:#1f242c; }
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+    header{display:flex;gap:.75rem;align-items:center;padding:14px;border-bottom:1px solid #2a313b;position:sticky;top:0;background:var(--bg)}
+    h1{font-size:18px;margin:0 12px 0 0}
+    input[type="text"]{flex:1;min-width:180px;background:var(--card);border:1px solid #2a313b;color:var(--fg);border-radius:8px;padding:10px}
+    button{background:var(--accent);border:none;border-radius:8px;color:#0a0a0a;font-weight:600;padding:10px 14px;cursor:pointer}
+    .container{max-width:1100px;margin:0 auto;padding:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid #2a313b;border-radius:12px;padding:12px}
+    .ttl{font-weight:700;margin:0 0 8px 0}
+    .meta{color:var(--muted);font-size:13px}
+    .thumb{width:100%;height:240px;object-fit:cover;border-radius:8px;background:#0f1318}
+    .msg{color:var(--muted);padding:18px}
+    .pill{position:fixed;right:14px;bottom:14px;background:#2a313b;color:#e6e8eb;border-radius:999px;padding:8px 12px;font-size:13px}
+    a{color:inherit}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    // Intenta leer las variables desde distintas formas (env.js u otros)
+    const ENV = (window.__ENV || window.env || {});
+    const SUPABASE_URL = ENV.SUPABASE_URL || ENV.NEXT_PUBLIC_SUPABASE_URL || "";
+    const SUPABASE_ANON_KEY = ENV.SUPABASE_ANON_KEY || ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.warn("Faltan variables de entorno SUPABASE_URL / SUPABASE_ANON_KEY");
+    }
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function cargar(initialIds) {
+      const list = document.getElementById('list');
+      const status = document.getElementById('status');
+      list.innerHTML = "";
+      status.textContent = "Cargando...";
+
+      try {
+        let q = client.from("tomos").select("*").order("id", { ascending: true }); // FIX: ordenar por 'id'
+
+        if (initialIds && initialIds.length) {
+          q = q.in("id", initialIds);
+        }
+
+        const { data, error } = await q;
+
+        if (error) {
+          console.error(error);
+          status.textContent = "Error cargando tomos";
+          return;
+        }
+
+        if (!data || !data.length) {
+          status.textContent = "No hay tomos.";
+          return;
+        }
+
+        status.textContent = "";
+        for (const t of data) {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img class="thumb" src="${t.portada_url || ""}" alt="portada">
+            <p class="ttl">Tomo #${t.id}</p>
+            <p class="meta">${t.titulo || ""}</p>
+            ${t.lomo_url ? `<p class="meta"><a href="${t.lomo_url}" target="_blank">Ver lomo</a></p>` : ""}
+          `;
+          list.appendChild(card);
+        }
+      } catch (e) {
+        console.error(e);
+        status.textContent = "Error cargando tomos";
+      }
+    }
+
+    function parseNumbers(text) {
+      // acepta formatos: "5", "5,7,9" o "5-8,12"
+      const out = new Set();
+      (text || "").split(",").map(s => s.trim()).forEach(part => {
+        if (!part) return;
+        if (part.includes("-")) {
+          const [a,b] = part.split("-").map(n => parseInt(n,10));
+          if (Number.isInteger(a) && Number.isInteger(b)) {
+            const min = Math.min(a,b), max = Math.max(a,b);
+            for (let i=min; i<=max; i++) out.add(i);
+          }
+        } else {
+          const n = parseInt(part,10);
+          if (Number.isInteger(n)) out.add(n);
+        }
+      });
+      return Array.from(out);
+    }
+
+    async function onBuscar() {
+      const raw = document.getElementById("q").value;
+      const ids = parseNumbers(raw);
+      await cargar(ids);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("btnBuscar").addEventListener("click", onBuscar);
+      cargar();
+    });
+  </script>
+</head>
+<body>
+  <header class="container">
+    <h1>Superhumor (Supabase)</h1>
+    <input id="q" type="text" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)" />
+    <button id="btnBuscar">Buscar</button>
+  </header>
+
+  <div class="container">
+    <div id="status" class="msg">Cargando...</div>
+    <div id="list" class="grid"></div>
+  </div>
+
+  <div class="pill">Editar</div>
+</body>
+</html>
