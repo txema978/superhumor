@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diagnóstico tomos (Supabase)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:24px}
+    h1{margin:0 0 12px;font-size:24px}
+    .card{background:#111827;border:1px solid #374151;border-radius:12px;padding:16px;margin:12px 0}
+    .ok{color:#10b981}.warn{color:#f59e0b}.err{color:#ef4444}
+    pre{white-space:pre-wrap;word-wrap:break-word;background:#0b1220;padding:12px;border-radius:8px;border:1px solid #1f2937;overflow:auto;max-height:50vh}
+    button{background:#2563eb;color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer}
+    small{opacity:.8}
+  </style>
+</head>
+<body>
+  <h1>Diagnóstico tomos (Supabase)</h1>
+  <div id="status" class="card">Iniciando…</div>
+  <div id="out" class="card" style="display:none">
+    <div id="summary"></div>
+    <h3>Datos crudos</h3>
+    <pre id="data"></pre>
+    <h3>Error (si hay)</h3>
+    <pre id="error"></pre>
+    <h3>Request info</h3>
+    <pre>URL: https://qjmugmnrgxccliyrlwfz.supabase.co
+Anon key: [usando la anon key que me diste]
+Tabla: public.tomos
+Query: select('*').order('id', {ascending:true}).limit(50)</pre>
+    <button id="refetch">Reintentar</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+    const SUPABASE_URL = 'https://qjmugmnrgxccliyrlwfz.supabase.co'
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo'
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON)
+
+    const $status = document.getElementById('status')
+    const $out = document.getElementById('out')
+    const $data = document.getElementById('data')
+    const $error = document.getElementById('error')
+    const $summary = document.getElementById('summary')
+    const $refetch = document.getElementById('refetch')
+
+    async function fetchTomos() {
+      $status.innerHTML = 'Consultando <b>public.tomos</b>…'
+      $error.textContent = ''; $data.textContent = ''; $summary.textContent=''
+      try{
+        const { data, error } = await supabase
+          .from('tomos')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(50)
+
+        $out.style.display = 'block'
+        if (error) {
+          console.error(error)
+          $status.innerHTML = "<span class='err'>Error consultando la tabla.</span>"
+          $error.textContent = JSON.stringify(error, null, 2)
+          return
+        }
+        $data.textContent = JSON.stringify(data, null, 2)
+        if (!data || data.length === 0) {
+          $status.innerHTML = "<span class='warn'>Consulta OK pero la tabla devolvió 0 filas.</span><br><small>Verifica en Supabase → Database → Tables → <b>tomos</b> que haya filas.</small>"
+          $summary.innerHTML = `Filas: 0`
+        } else {
+          $status.innerHTML = "<span class='ok'>Consulta OK ✅</span>"
+          $summary.innerHTML = `Filas: <b>${data.length}</b> — Mostrando primeras ${Math.min(50, data.length)}.`
+        }
+      }catch(e){
+        console.error(e)
+        $status.innerHTML = "<span class='err'>Excepción en el cliente.</span>"
+        $error.textContent = e?.stack || String(e)
+      }
+    }
+    $refetch.addEventListener('click', fetchTomos)
+    fetchTomos()
+  </script>
+</body>
+</html>
