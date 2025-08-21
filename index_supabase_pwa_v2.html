@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Super Humor (Supabase) — PWA UI</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="dns-prefetch" href="https://unpkg.com">
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#141822;
+    --panel-2:#1a2030;
+    --text:#f2f2f7;
+    --muted:#9aa5b1;
+    --accent:#2f86ff;
+    --ok:#12a150;
+    --warn:#d95040;
+    --card-gap:18px;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  header{
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(to bottom, rgba(15,17,21,.9), rgba(15,17,21,.75) 60%, rgba(15,17,21,0));
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .bar{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; max-width:1200px; margin:0 auto;
+  }
+  .title{font-size:18px; font-weight:700; letter-spacing:.2px}
+  .sp{flex:1}
+  .btn{
+    background:var(--panel-2); border:1px solid rgba(255,255,255,.08);
+    color:var(--text); padding:10px 14px; border-radius:12px;
+    font-weight:600; cursor:pointer;
+  }
+  .btn.primary{background:var(--accent); border-color:transparent}
+  .btn.ghost{background:transparent}
+  .btn.ok{background:var(--ok); border-color:transparent}
+  .btn.warn{background:var(--warn); border-color:transparent}
+  .grid{
+    max-width:1200px; margin:20px auto; padding:0 16px;
+    display:grid; grid-template-columns:repeat(12,1fr); gap:var(--card-gap);
+  }
+  .card{
+    grid-column: span 6;
+    background:var(--panel);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  @media (min-width:1100px){
+    .card{grid-column: span 4;}
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .card-title{font-size:20px; font-weight:800}
+  .card-sub{color:var(--muted); font-size:12px}
+  .card-body{padding:16px; display:grid; grid-template-columns: 1fr 160px; gap:14px}
+  .col-title{font-size:13px; color:var(--muted); margin-bottom:8px}
+  .drop{
+    display:flex; align-items:center; justify-content:center;
+    height:280px; background:var(--panel-2);
+    border:1px dashed rgba(255,255,255,.14); border-radius:12px;
+    position:relative; overflow:hidden;
+  }
+  .drop.small{height:280px; width:160px}
+  .drop img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+  .drop .placeholder{opacity:.8; color:var(--muted); font-weight:600}
+  .row{display:flex; align-items:center; gap:8px; margin-top:8px}
+  .tag{padding:4px 8px; border-radius:999px; background:#0e1422; border:1px solid rgba(255,255,255,.08); color:var(--muted); font-size:12px}
+  .hidden{display:none !important}
+  /* login modal */
+  .modal-back{
+    position:fixed; inset:0; background:rgba(0,0,0,.55);
+    display:none; align-items:center; justify-content:center; z-index:200;
+  }
+  .modal{
+    width:min(92vw, 400px); background:var(--panel); border:1px solid rgba(255,255,255,.1);
+    border-radius:16px; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,.5)
+  }
+  .modal h3{margin:0 0 12px 0}
+  .field{display:flex; flex-direction:column; gap:6px; margin:10px 0}
+  .input{padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:#0f1320; color:var(--text)}
+  .muted{color:var(--muted)}
+  .actions{display:flex; gap:10px; margin-top:14px}
+  .thumb-actions{position:absolute; top:10px; right:10px; display:flex; gap:6px}
+  .icon-btn{
+    background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.2);
+    color:#fff; width:34px; height:34px; border-radius:10px; display:grid; place-items:center; cursor:pointer
+  }
+  .preview{position:fixed; inset:0; background:rgba(0,0,0,.88); display:none; align-items:center; justify-content:center; z-index:300}
+  .preview img{max-width:90vw; max-height:85vh; border-radius:14px; border:1px solid rgba(255,255,255,.15)}
+  .pill{background:#0c1424; border:1px solid rgba(255,255,255,.08); color:#80aaff; padding:4px 8px; border-radius:999px; font-size:12px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="title">Super Humor (Supabase)</div>
+      <span id="statusPill" class="pill">Visitante</span>
+      <div class="sp"></div>
+      <button id="btnEdit" class="btn">Editar</button>
+      <button id="btnLogout" class="btn ghost hidden">Salir</button>
+    </div>
+  </header>
+
+  <main id="grid" class="grid"></main>
+
+  <!-- Login modal -->
+  <div id="loginBack" class="modal-back">
+    <div class="modal">
+      <h3>Inicia sesión (Supabase)</h3>
+      <div class="field">
+        <label class="muted">Email</label>
+        <input id="loginEmail" class="input" type="email" placeholder="tu@email.com" />
+      </div>
+      <div class="field">
+        <label class="muted">Contraseña</label>
+        <input id="loginPass" class="input" type="password" placeholder="••••••••" />
+      </div>
+      <div class="actions">
+        <button id="doLogin" class="btn primary">Entrar</button>
+        <button id="cancelLogin" class="btn ghost">Cancelar</button>
+      </div>
+      <div id="loginMsg" class="muted"></div>
+    </div>
+  </div>
+
+  <!-- Image preview -->
+  <div id="previewBack" class="preview" title="Cerrar">
+    <img id="previewImg" alt="preview" />
+  </div>
+
+  <!-- env variables -->
+  <script src="env.js"></script>
+  <!-- supabase js v2 -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
+
+<script>
+(function(){
+  const grid = document.getElementById('grid');
+  const btnEdit = document.getElementById('btnEdit');
+  const btnLogout = document.getElementById('btnLogout');
+  const loginBack = document.getElementById('loginBack');
+  const doLogin = document.getElementById('doLogin');
+  const cancelLogin = document.getElementById('cancelLogin');
+  const loginEmail = document.getElementById('loginEmail');
+  const loginPass = document.getElementById('loginPass');
+  const loginMsg = document.getElementById('loginMsg');
+  const statusPill = document.getElementById('statusPill');
+  const previewBack = document.getElementById('previewBack');
+  const previewImg = document.getElementById('previewImg');
+
+  if(!window.env || !window.env.SUPABASE_URL || !window.env.SUPABASE_ANON_KEY){
+    document.body.innerHTML = '<div style="padding:24px;color:#fff">Falta configurar <b>env.js</b> con <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code>.</div>';
+    return;
+  }
+
+  const supa = supabase.createClient(window.env.SUPABASE_URL, window.env.SUPABASE_ANON_KEY);
+  let isEditing = false;
+  let user = null;
+
+  const q = (sel, root=document)=>root.querySelector(sel);
+  const el = (tag, cls, txt)=>{ const n=document.createElement(tag); if(cls) n.className=cls; if(txt) n.textContent=txt; return n; };
+
+  function showLogin(open=true){ loginBack.style.display = open ? 'flex' : 'none'; }
+  function fmtTitle(n){ return 'Tomo ' + n; }
+
+  async function fetchTomos(){
+    const { data, error } = await supa.from('tomos').select('*').order('id', {ascending:true}).limit(1000);
+    if(error){ console.error(error); return []; }
+    return data || [];
+  }
+
+  function card(tomo){
+    const c = el('div','card');
+    // head
+    const head = el('div','card-head');
+    const left = el('div');
+    const h = el('div','card-title', fmtTitle(tomo.id));
+    const sub = el('div','card-sub', tomo.titulo || ('Super Humor nº'+tomo.id));
+    left.appendChild(h); left.appendChild(sub);
+    head.appendChild(left);
+    c.appendChild(head);
+
+    // body
+    const body = el('div','card-body');
+
+    // portada col
+    const colA = el('div');
+    colA.appendChild(el('div','col-title','Portada (completa)'));
+    const dropA = el('div','drop');
+    const phA = el('div','placeholder'); phA.textContent = '📷 Subir portada';
+    dropA.appendChild(phA);
+    if(tomo.portada_url){
+      const img = el('img'); img.src = tomo.portada_url;
+      dropA.appendChild(img);
+      const ta = el('div','thumb-actions');
+      const view = el('button','icon-btn'); view.innerHTML='👁️'; view.title='Ver';
+      view.onclick=()=>{ previewImg.src=tomo.portada_url; previewBack.style.display='flex'; };
+      const del = el('button','icon-btn'); del.innerHTML='🗑️'; del.title='Quitar portada';
+      del.onclick=()=> updateImg(tomo.id,'portada_url', null);
+      ta.appendChild(view); ta.appendChild(del); dropA.appendChild(ta);
+    }
+    if(isEditing){
+      dropA.onclick=()=>pickAndUpload(tomo.id,'portada_url');
+      dropA.style.cursor='pointer';
+    }
+    colA.appendChild(dropA);
+
+    // lomo col
+    const colB = el('div');
+    colB.appendChild(el('div','col-title','Lomo'));
+    const dropB = el('div','drop small');
+    const phB = el('div','placeholder'); phB.textContent = '📷 Subir lomo';
+    dropB.appendChild(phB);
+    if(tomo.lomo_url){
+      const img = el('img'); img.src = tomo.lomo_url;
+      dropB.appendChild(img);
+      const tb = el('div','thumb-actions');
+      const view = el('button','icon-btn'); view.innerHTML='👁️'; view.title='Ver';
+      view.onclick=()=>{ previewImg.src=tomo.lomo_url; previewBack.style.display='flex'; };
+      const del = el('button','icon-btn'); del.innerHTML='🗑️'; del.title='Quitar lomo';
+      del.onclick=()=> updateImg(tomo.id,'lomo_url', null);
+      tb.appendChild(view); tb.appendChild(del); dropB.appendChild(tb);
+    }
+    if(isEditing){
+      dropB.onclick=()=>pickAndUpload(tomo.id,'lomo_url');
+      dropB.style.cursor='pointer';
+    }
+    colB.appendChild(dropB);
+
+    body.appendChild(colA);
+    body.appendChild(colB);
+    c.appendChild(body);
+    return c;
+  }
+
+  async function render(){
+    grid.innerHTML='';
+    const tomos = await fetchTomos();
+    for (const t of tomos){
+      grid.appendChild(card(t));
+    }
+  }
+
+  async function pickAndUpload(id, field){
+    try{
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async (e)=>{
+        const file = e.target.files?.[0];
+        if(!file) return;
+        const path = `uploads/${Date.now()}_${file.name}`;
+        const { error: upErr } = await supa.storage.from('imagenes').upload(path, file, { upsert:false });
+        if(upErr){ alert('Error subiendo: '+upErr.message); return; }
+        const { data:pub } = supa.storage.from('imagenes').getPublicUrl(path);
+        await updateImg(id, field, pub?.publicUrl || null);
+      };
+      input.click();
+    }catch(err){ console.error(err); alert('Error seleccionando archivo'); }
+  }
+
+  async function updateImg(id, field, url){
+    const payload = {}; payload[field] = url;
+    const { error } = await supa.from('tomos').update(payload).eq('id', id);
+    if(error){ alert('Error guardando: '+error.message); return; }
+    await render();
+  }
+
+  // auth
+  btnEdit.onclick = async ()=>{
+    if(!user){
+      // open login
+      showLogin(true);
+      return;
+    }
+    isEditing = !isEditing;
+    btnEdit.textContent = isEditing ? 'Dejar de editar' : 'Editar';
+    await render();
+  };
+
+  doLogin.onclick = async ()=>{
+    loginMsg.textContent = 'Conectando...';
+    const email = loginEmail.value.trim();
+    const pass = loginPass.value;
+    try{
+      const { data, error } = await supa.auth.signInWithPassword({ email, password: pass });
+      if(error){ loginMsg.textContent = 'Error: ' + error.message; return; }
+      user = data.user;
+      showLogin(false);
+      isEditing = true;
+      btnEdit.textContent = 'Dejar de editar';
+      btnLogout.classList.remove('hidden');
+      statusPill.textContent = 'Editor';
+      await render();
+    }catch(err){
+      loginMsg.textContent = 'Error inesperado';
+    }
+  };
+  cancelLogin.onclick = ()=> showLogin(false);
+  btnLogout.onclick = async ()=>{
+    await supa.auth.signOut();
+    user = null; isEditing = false;
+    btnEdit.textContent = 'Editar';
+    btnLogout.classList.add('hidden');
+    statusPill.textContent = 'Visitante';
+    await render();
+  };
+
+  // session
+  supa.auth.getSession().then(({data})=>{
+    if(data.session){
+      user = data.session.user;
+      btnLogout.classList.remove('hidden');
+      statusPill.textContent = 'Editor';
+    }
+    render();
+  });
+
+  previewBack.onclick = ()=>{ previewBack.style.display='none'; previewImg.src=''; };
+})();
+</script>
+</body>
+</html>
