@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superhumor (Supabase) • DEBUG SAFE</title>
+  <style>
+    :root{color-scheme:dark;}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,sans-serif;background:#0b0f14;color:#eaeef2}
+    header{display:flex;gap:12px;align-items:center;padding:16px 20px;background:#0f1520;border-bottom:1px solid #1b2430;position:sticky;top:0}
+    h1{font-size:18px;margin:0}
+    .tag{font-size:12px;padding:2px 8px;border-radius:999px;background:#14213d;color:#a3d3ff;border:1px solid #1f2d44}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    .card{border:1px solid #1b2430;background:#0f1520;border-radius:14px;padding:14px 16px;margin-bottom:14px}
+    .err{border-color:#3c1d1d;background:#190f10;color:#ffb4b4}
+    .ok{border-color:#1d3c2c;background:#0f1712;color:#b8ffc8}
+    code, pre{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    pre{white-space:pre-wrap;word-break:break-word;background:#0b0f14;border:1px solid #1b2430;border-radius:10px;padding:10px;margin:8px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+    .item{padding:12px;border-radius:12px;border:1px solid #1b2430;background:#0f1520}
+    .muted{color:#96a2b4;font-size:12px}
+    .hidden{display:none}
+    a{color:#7cc8ff;text-decoration:none}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Superhumor (Supabase)</h1>
+    <span class="tag">DEBUG SAFE</span>
+  </header>
+  <div class="wrap">
+    <div id="status" class="card">Cargando…</div>
+    <div id="cards" class="grid hidden"></div>
+    <div id="debug" class="card hidden"></div>
+  </div>
+
+  <!-- 1) Variables de entorno desde env.js, mismo directorio que este HTML -->
+  <script src="env.js" defer></script>
+  <!-- 2) Supabase JS v2 -->
+  <script type="module">
+    // Helper: pinta mensajes
+    const $ = (id)=>document.getElementById(id);
+    const statusBox = $('status');
+    const cards = $('cards');
+    const debugBox = $('debug');
+    const show = (el)=>el.classList.remove('hidden');
+    const hide = (el)=>el.classList.add('hidden');
+    const setStatus = (html, cls='') => {
+      statusBox.className = `card ${cls}`;
+      statusBox.innerHTML = html;
+    };
+    const showDebug = (title, obj) => {
+      show(debugBox);
+      debugBox.innerHTML = `<strong>${title}</strong><pre>${escapeHtml(JSON.stringify(obj, null, 2))}</pre>` + debugBox.innerHTML;
+    };
+    const escapeHtml = (s)=>String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'}[m]));
+    const waitFor = (cond, timeout=2000)=>new Promise((res, rej)=>{
+      const t0 = performance.now();
+      const tick = ()=>{
+        if (cond()) return res(true);
+        if (performance.now()-t0>timeout) return rej(new Error('timeout'));
+        requestAnimationFrame(tick);
+      };
+      tick();
+    });
+
+    (async () => {
+      try{
+        // Espera a que cargue env.js
+        await waitFor(()=>window.env && window.env.SUPABASE_URL, 3000);
+      }catch(e){
+        setStatus(`❌ No se ha cargado <code>env.js</code> o faltan claves.<br>Coloca un archivo <code>env.js</code> junto a este HTML con:<pre>window.env = {
+  SUPABASE_URL: "https://TU-PROYECTO.supabase.co",
+  SUPABASE_ANON_KEY: "TU_ANON_KEY"
+};</pre>`, 'err');
+        showDebug('Error', {message:e.message});
+        return;
+      }
+
+      // Carga dinámica del CDN de supabase si no existe
+      if (!('supabase' in window)) {
+        try{
+          setStatus('Cargando librería supabase-js desde CDN…');
+          await new Promise((res, rej)=>{
+            const s=document.createElement('script');
+            s.src='https://esm.sh/@supabase/supabase-js@2';
+            s.type='module';
+            s.onload=()=>res();
+            s.onerror=(e)=>rej(new Error('Fallo cargando CDN supabase-js'));
+            document.head.appendChild(s);
+          });
+        }catch(e){
+          setStatus(`❌ La librería supabase-js no se ha podido cargar (CDN).`, 'err');
+          showDebug('Error CDN', {message:e.message});
+          return;
+        }
+      }
+
+      // Crea el cliente
+      let sb;
+      try{
+        // import dinámico para ESM en navegadores modernos
+        const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+        sb = mod.createClient(window.env.SUPABASE_URL, window.env.SUPABASE_ANON_KEY);
+      }catch(e){
+        setStatus('❌ Error creando el cliente de Supabase.', 'err');
+        showDebug('Cliente error', {message:e.message, env: window.env});
+        return;
+      }
+
+      // Consulta
+      try{
+        setStatus('Consultando tabla <code>public.tomos</code>…');
+        const { data, error } = await sb
+          .from('tomos')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(90);
+
+        if (error){
+          setStatus('❌ Error en la consulta.', 'err');
+          showDebug('Supabase error', error);
+          return;
+        }
+
+        show(cards);
+        hide(statusBox);
+
+        if (!data || data.length===0){
+          setStatus('Consulta OK pero la tabla devolvió 0 filas. Verifica que existan registros en <em>Database → Tables → tomos</em>.', 'ok');
+          showDebug('Datos crudos', data);
+          return;
+        }
+
+        // Pinta tarjetas simples
+        cards.innerHTML = data.map(row=>`
+          <div class="item">
+            <div class="muted">id: ${row.id ?? '-'}</div>
+            <div style="font-weight:600;margin:4px 0 10px">${escapeHtml(row.titulo ?? ('Tomo ' + (row.numero ?? row.id ?? '')))}</div>
+            ${row.portada_url ? `<img src="${escapeHtml(row.portada_url)}" alt="portada" style="width:100%;height:180px;object-fit:cover;border-radius:8px;border:1px solid #1b2430" />`
+                                : `<div class="muted">Sin portada</div>`}
+            ${row.lomo_url ? `<div class="muted" style="margin-top:6px">Lomo: OK</div>` : ``}
+          </div>
+        `).join('');
+      }catch(e){
+        setStatus('❌ Excepción al consultar/pintar.', 'err');
+        showDebug('Excepción', {message:e.message, stack:e.stack});
+      }
+    })();
+  </script>
+</body>
+</html>
