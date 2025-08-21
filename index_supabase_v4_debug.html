@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Superhumor (Supabase) - DEBUG</title>
+  <style>
+    body{background:#0f172a;color:#e5e7eb;font-family:system-ui,Arial,sans-serif;margin:0}
+    header{padding:18px 24px;border-bottom:1px solid #1f2937;display:flex;gap:16px;align-items:center}
+    h1{font-size:22px;margin:0}
+    .row{display:flex;gap:10px;align-items:center;max-width:1100px;width:100%}
+    input{flex:1;background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:8px;padding:10px 12px}
+    button{background:#60a5fa;border:none;padding:10px 14px;border-radius:8px;color:#0b1020;font-weight:700}
+    main{max-width:1100px;margin:24px auto;padding:0 24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+    .card{background:#111827;border:1px solid #374151;border-radius:12px;padding:12px}
+    .muted{color:#9ca3af}
+    .err{color:#ef4444;white-space:pre-wrap}
+    a{color:#93c5fd}
+    .pill{background:#1f2937;border-radius:999px;padding:2px 8px;font-size:12px;color:#93c5fd}
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header>
+    <div class="row">
+      <h1>Superhumor (Supabase)</h1>
+      <span class="pill">DEBUG</span>
+      <input id="q" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)" />
+      <button id="btnBuscar">Buscar</button>
+    </div>
+  </header>
+  <main>
+    <div id="estado" class="muted">Cargando...</div>
+    <div id="grid" class="grid"></div>
+    <div id="error" class="err"></div>
+  </main>
+<script>
+// === Config directa (para evitar depender de env.js) ===
+const SUPABASE_URL = "https://qjmugmnrgxccliyrlwfz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo";
+
+const estado = document.getElementById('estado');
+const errorBox = document.getElementById('error');
+const grid = document.getElementById('grid');
+const q = document.getElementById('q');
+const btnBuscar = document.getElementById('btnBuscar');
+
+let supa;
+
+function log(...a){ console.log("[DEBUG]", ...a); }
+
+(async function init(){
+  try {
+    if (!window.supabase) {
+      throw new Error("La librería supabase-js no está cargada (CDN).");
+    }
+    supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    log("Cliente creado:", SUPABASE_URL);
+
+    await cargarTodos();
+  } catch (e) {
+    mostrarError(e);
+  }
+})();
+
+function mostrarError(err){
+  console.error(err);
+  estado.textContent = "";
+  errorBox.textContent = (err && err.message) ? err.message : String(err);
+}
+
+async function cargarTodos(){
+  estado.textContent = "Cargando tomos...";
+  errorBox.textContent = "";
+  grid.innerHTML = "";
+  try {
+    const { data, error, status } = await supa
+      .from('tomos')
+      .select('id,titulo,portada_url,lomo_url')
+      .order('id', { ascending: true });
+
+    log("Respuesta listar:", {status, data, error});
+
+    if (error) {
+      throw new Error(`Error listando tomos (status ${status}): ${error.message}`);
+    }
+    if (!data || !data.length) {
+      estado.textContent = "No hay tomos aún. Inserta alguno en la tabla 'tomos'.";
+      return;
+    }
+    estado.textContent = "";
+    render(data);
+  } catch (e) {
+    mostrarError(e);
+  }
+}
+
+function render(items){
+  grid.innerHTML = items.map(t => `
+    <div class="card">
+      <div><strong>#${t.id}</strong> — ${t.titulo || '<span class="muted">Sin título</span>'}</div>
+      <div class="muted" style="font-size:12px;margin-top:6px">portada_url: ${t.portada_url || '-'}</div>
+      <div class="muted" style="font-size:12px">lomo_url: ${t.lomo_url || '-'}</div>
+    </div>
+  `).join("");
+}
+
+function parseRangos(input){
+  if (!input) return [];
+  const res = new Set();
+  input.replace(/\s+/g,'').split(',').forEach(chunk => {
+    if (!chunk) return;
+    if (chunk.includes('-')) {
+      const [a,b] = chunk.split('-').map(Number);
+      if (!isNaN(a) && !isNaN(b)) {
+        const [start,end] = a <= b ? [a,b] : [b,a];
+        for (let i=start;i<=end;i++) res.add(i);
+      }
+    } else {
+      const n = Number(chunk);
+      if (!isNaN(n)) res.add(n);
+    }
+  });
+  return [...res];
+}
+
+btnBuscar.addEventListener('click', async () => {
+  const ids = parseRangos(q.value);
+  if (!ids.length) { cargarTodos(); return; }
+  estado.textContent = "Buscando...";
+  errorBox.textContent = "";
+  grid.innerHTML = "";
+  try {
+    const { data, error, status } = await supa
+      .from('tomos')
+      .select('id,titulo,portada_url,lomo_url')
+      .in('id', ids)
+      .order('id', { ascending: true });
+    log("Respuesta búsqueda:", {status, data, error});
+    if (error) throw new Error(`Error buscando (status ${status}): ${error.message}`);
+    estado.textContent = "";
+    if (!data || !data.length) {
+      estado.textContent = "Sin resultados.";
+      return;
+    }
+    render(data);
+  } catch (e) {
+    mostrarError(e);
+  }
+});
+</script>
+</body>
+</html>
