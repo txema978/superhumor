@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <title>Colección Superhumor — v3.8 (Supabase)</title>
+  <style>
+    :root{
+      --bg:#0f1115;--panel:#141824;--muted:#9aa3b2;--text:#e5e7eb;--brand:#2563eb;
+      --ok:#16a34a;--warn:#ef4444;--chip:#1f2937;--chip-border:#374151; --chip2:#0b1220;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial}
+    .container{max-width:1152px;margin:28px auto;padding:0 16px}
+    .header{background:linear-gradient(135deg,#1f2937,#0b1220);border:1px solid #1f2433;color:#dbeafe;padding:18px 20px;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+    .title{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:800}
+    .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px}
+    .kpi{background:var(--panel);border:1px solid #1f2433;border-radius:12px;padding:14px 16px}
+    .kpi small{color:var(--muted);display:block;margin-bottom:6px}
+    .toolbar{display:flex;gap:10px;align-items:center;margin:12px 0}
+    .search{display:flex;gap:8px;width:100%}
+    .search input{flex:1;background:#0b1220;border:1px solid #1f2433;color:var(--text);border-radius:10px;padding:10px 12px;outline:none}
+    .btn{appearance:none;border:1px solid #1f2433;background:#0b1220;color:#c7d2fe;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn.primary{background:#1d4ed8;border-color:#1d4ed8;color:white}
+    .btn.ok{background:rgba(22,163,74,.15);border-color:#14532d;color:#86efac}
+    .tabs{display:flex;gap:8px;margin-top:8px}
+    .chip{background:var(--chip);border:1px solid var(--chip-border);border-radius:999px;padding:8px 14px;color:#cbd5e1;font-weight:700;cursor:pointer}
+    .chip.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+    /* grid of cards */
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+    @media (min-width:980px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    .card{background:var(--panel);border:1px solid #1f2433;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+    .card h3{margin:0 0 2px;font-size:20px}
+    .line{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .pill{background:#0b1220;border:1px solid #1f2433;border-radius:999px;padding:8px 12px;color:#e5e7eb;cursor:pointer}
+    .pill.warn{color:#fecaca;border-color:#7f1d1d;background:#2a0f19}
+    .muted{color:var(--muted);font-size:14px}
+    .comment{background:#0b1220;border:1px dashed #1f2433;border-radius:10px;padding:10px 12px;color:#cbd5e1}
+    /* edit mode */
+    .editbar{display:flex;gap:10px;margin-left:auto}
+    .dropzone{border:2px dashed #374151;border-radius:12px;height:260px;display:flex;align-items:center;justify-content:center;color:#9aa3b2;background:#0b1220;position:relative}
+    .dropzone.small{height:260px}
+    .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .preview{position:absolute;inset:0;background:#0002}
+    .preview img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+    .slot{display:grid;grid-template-columns:1.3fr .7fr;gap:12px}
+    .slot h4{margin:0 0 6px;font-size:14px;color:#a8b3cf}
+    .icons{position:absolute;top:8px;right:8px;display:flex;gap:6px}
+    .iconbtn{border:none;background:rgba(17,24,39,.7);color:#e5e7eb;border-radius:8px;padding:6px 8px;cursor:pointer}
+    .hidden{display:none !important}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">
+        <span style="font-size:28px">📚</span>
+        <div>
+          Colección Superhumor
+          <div class="muted" style="font-weight:600">Gestión completa de 67 tomos — v3.8 (Supabase)</div>
+        </div>
+        <div class="editbar">
+          <button id="btnEdit" class="btn">Editar</button>
+          <a class="btn" href="#" id="btnSalir" title="Cerrar">Salir</a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="kpi"><small>Tomos que tienes</small><div id="kpiTengo" style="font-size:24px;font-weight:800">0</div></div>
+        <div class="kpi"><small>Tomos que faltan</small><div id="kpiFaltan" style="font-size:24px;font-weight:800">0</div></div>
+        <div class="kpi"><small>Completado</small><div id="kpiPct" style="font-size:24px;font-weight:800">0%</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="search">
+          <input id="txtQuery" placeholder="Escribe números (p. ej. 5, 12, 23-25, 30)">
+          <button id="btnBuscar" class="btn primary">Buscar</button>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="chip active" data-tab="all">Todos (67)</button>
+        <button class="chip" data-tab="tengo">Que tengo</button>
+        <button class="chip" data-tab="falta">Que me faltan</button>
+      </div>
+    </div>
+
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </div>
+
+  <!-- Supabase library + env -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="env.js"></script>
+  <script>
+  (function(){
+    const hasSupabase = !!window.supabase;
+    const envOK = !!(window.env && window.env.SUPABASE_URL && window.env.SUPABASE_ANON_KEY);
+    if(!hasSupabase){
+      alert('No se pudo cargar la librería de Supabase (CDN).');
+      return;
+    }
+    if(!envOK){
+      alert('Falta configurar env.js con SUPABASE_URL y SUPABASE_ANON_KEY');
+      return;
+    }
+
+    const client = window.supabase.createClient(window.env.SUPABASE_URL, window.env.SUPABASE_ANON_KEY);
+    const bucket = 'imagenes';
+    const grid = document.getElementById('grid');
+    const btnEdit = document.getElementById('btnEdit');
+    const txtQuery = document.getElementById('txtQuery');
+    const btnBuscar = document.getElementById('btnBuscar');
+
+    let editMode = false;
+    let tomos = [];
+    let filter = 'all';
+
+    document.querySelectorAll('.chip').forEach(ch=>{
+      ch.addEventListener('click',()=>{
+        document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        ch.classList.add('active');
+        filter = ch.dataset.tab;
+        render();
+      })
+    });
+
+    btnBuscar.addEventListener('click',()=>{
+      const q = txtQuery.value.trim();
+      applyQuery(q);
+    });
+
+    btnEdit.addEventListener('click',()=>{
+      editMode = !editMode;
+      btnEdit.textContent = editMode ? 'Dejar de editar' : 'Editar';
+      document.querySelectorAll('.edit-ui').forEach(el=>{
+        el.classList.toggle('hidden', !editMode);
+      });
+    });
+
+    function applyQuery(q){
+      if(!q){ render(); return; }
+      const set = new Set();
+      // soporta comas, espacios y rangos 3-7
+      q.split(/[\s,]+/).forEach(tok=>{
+        const t = tok.trim();
+        if(!t) return;
+        const m = t.match(/^(\d+)-(\d+)$/);
+        if(m){
+          let a = +m[1], b = +m[2];
+          if(a>b) [a,b]=[b,a];
+          for(let i=a;i<=b;i++) set.add(i);
+        }else{
+          const n = +t;
+          if(!Number.isNaN(n)) set.add(n);
+        }
+      });
+      const ids = [...set];
+      const filtered = tomos.filter(t=>ids.includes(t.id));
+      renderCards(filtered);
+    }
+
+    async function load(){
+      const { data, error } = await client.from('tomos').select('*').order('id',{ascending:true}).limit(67);
+      if(error){ console.error(error); grid.innerHTML = '<div class="muted">Error cargando tomos</div>'; return; }
+      tomos = data || [];
+      render();
+    }
+
+    function stats(){
+      const tengo = tomos.filter(t=>t.portada_url || t.lomo_url).length;
+      const faltan = tomos.length - tengo;
+      document.getElementById('kpiTengo').textContent = String(tengo);
+      document.getElementById('kpiFaltan').textContent = String(faltan);
+      document.getElementById('kpiPct').textContent = Math.round((tengo/tomos.length)*100)+'%';
+    }
+
+    function render(){
+      stats();
+      let list = tomos;
+      if(filter==='tengo') list = tomos.filter(t=>t.portada_url || t.lomo_url);
+      if(filter==='falta') list = tomos.filter(t=>!t.portada_url && !t.lomo_url);
+      renderCards(list);
+    }
+
+    function renderCards(list){
+      grid.innerHTML = '';
+      for(const t of list){
+        grid.appendChild(card(t));
+      }
+    }
+
+    function card(t){
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.innerHTML = `
+        <h3>Tomo ${t.id}</h3>
+        <div class="line">
+          <button class="pill">Marcar como tengo</button>
+          <span class="pill warn">✕ TE FALTA</span>
+        </div>
+        <div class="muted">Comentario</div>
+        <div class="comment" contenteditable="true" data-id="${t.id}" placeholder="Haz clic para añadir comentario...">Haz clic para añadir comentario...</div>
+        <div class="edit-ui ${editMode?'':'hidden'}">
+          <div class="slot">
+            <div>
+              <h4>Portada (completa)</h4>
+              <div class="dropzone" data-kind="portada_url">
+                <input type="file" accept="image/*" />
+                <span>📷 Subir portada</span>
+                ${t.portada_url ? `<div class="preview"><img alt="portada" src="${t.portada_url}"></div>`:''}
+                <div class="icons">
+                  <button class="iconbtn view ${t.portada_url?'':'hidden'}" title="Ver">👁️</button>
+                  <button class="iconbtn del ${t.portada_url?'':'hidden'}" title="Borrar">🗑️</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4>Lomo</h4>
+              <div class="dropzone small" data-kind="lomo_url">
+                <input type="file" accept="image/*" />
+                <span>📷 Subir lomo</span>
+                ${t.lomo_url ? `<div class="preview"><img alt="lomo" src="${t.lomo_url}"></div>`:''}
+                <div class="icons">
+                  <button class="iconbtn view ${t.lomo_url?'':'hidden'}" title="Ver">👁️</button>
+                  <button class="iconbtn del ${t.lomo_url?'':'hidden'}" title="Borrar">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // wire the two dropzones
+      el.querySelectorAll('.dropzone').forEach(dz=>{
+        const kind = dz.dataset.kind; // 'portada_url' | 'lomo_url'
+        const input = dz.querySelector('input[type=file]');
+        const viewBtn = dz.querySelector('.iconbtn.view');
+        const delBtn = dz.querySelector('.iconbtn.del');
+
+        input.addEventListener('change', async (e)=>{
+          const file = e.target.files && e.target.files[0];
+          if(!file) return;
+          const path = `uploads/${Date.now()}_${file.name}`;
+          // subir
+          setBusy(dz,true,'Subiendo...');
+          const { error: upErr } = await client.storage.from(bucket).upload(path,file,{cacheControl:'3600',upsert:false});
+          if(upErr){ console.error(upErr); alert('Error subiendo'); setBusy(dz,false); return; }
+          // obtener URL pública
+          const { data:pub } = client.storage.from(bucket).getPublicUrl(path);
+          const url = pub?.publicUrl;
+          // guardar en tabla
+          const { error: upDb } = await client.from('tomos').update({ [kind]: url }).eq('id', t.id);
+          if(upDb){ console.error(upDb); alert('Error guardando en tabla'); setBusy(dz,false); return; }
+          // refrescar tomo local
+          t[kind] = url;
+          refreshDropzone(dz, url);
+          stats();
+          setBusy(dz,false);
+        });
+
+        if(viewBtn){
+          viewBtn.addEventListener('click',()=>{
+            const url = t[kind];
+            if(url) window.open(url,'_blank');
+          });
+        }
+        if(delBtn){
+          delBtn.addEventListener('click', async ()=>{
+            if(!confirm('¿Eliminar imagen y limpiar campo?')) return;
+            // intentar deducir path (parte después de /object/public/imagenes/)
+            const url = t[kind];
+            if(!url){ await client.from('tomos').update({[kind]: null}).eq('id',t.id); refreshDropzone(dz,null); return; }
+            try{
+              const marker = '/storage/v1/object/public/'+bucket+'/';
+              const idx = url.indexOf(marker);
+              const rel = idx>=0 ? url.substring(idx+marker.length) : null;
+              // limpiar en tabla primero (aunque el fichero permanezca si no hay rel)
+              await client.from('tomos').update({[kind]: null}).eq('id',t.id);
+              if(rel){
+                await client.storage.from(bucket).remove([rel]);
+              }
+              t[kind] = null;
+              refreshDropzone(dz,null);
+              stats();
+            }catch(err){ console.error(err); alert('No se pudo borrar'); }
+          });
+        }
+      });
+
+      return el;
+    }
+
+    function refreshDropzone(dz,url){
+      const prev = dz.querySelector('.preview');
+      if(prev) prev.remove();
+      if(url){
+        const p = document.createElement('div');
+        p.className='preview';
+        p.innerHTML = `<img src="${url}" alt="" />`;
+        dz.appendChild(p);
+        dz.querySelectorAll('.iconbtn').forEach(b=>b.classList.remove('hidden'));
+      }else{
+        dz.querySelectorAll('.iconbtn').forEach(b=>b.classList.add('hidden'));
+      }
+    }
+
+    function setBusy(el, on, msg){
+      if(on){
+        el.dataset._label = el.querySelector('span')?.textContent || '';
+        if(el.querySelector('span')) el.querySelector('span').textContent = msg||'Subiendo...';
+        el.style.opacity=.6;
+        el.style.pointerEvents='none';
+      }else{
+        if(el.querySelector('span') && el.dataset._label) el.querySelector('span').textContent = el.dataset._label;
+        el.style.opacity=1;
+        el.style.pointerEvents='auto';
+      }
+    }
+
+    load();
+  })();
+  </script>
+</body>
+</html>
