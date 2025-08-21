@@ -1,0 +1,244 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superhumor – Admin (portadas & lomos)</title>
+  <style>
+    :root{ color-scheme:dark; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:#0b0e12; color:#e6e7ea; }
+    header{ position:sticky; top:0; z-index:10; display:flex; gap:.75rem; align-items:center; padding:12px 16px; background:#10151c; border-bottom:1px solid #243040; }
+    h1{ font-size:18px; margin:0 6px 0 0; }
+    .muted{ color:#9aa6b2; }
+    .ok{ color:#16c172; }
+    .err{ color:#ef5350; }
+    .wrap{ max-width:1100px; margin:18px auto; padding:0 16px; }
+    .card{ background:#121822; border:1px solid #243040; border-radius:16px; padding:16px; margin:12px 0; }
+    .topline{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+    .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+    .slot{ border:2px dashed #334256; border-radius:12px; padding:12px; min-height:180px; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .slot img{ max-width:100%; max-height:220px; object-fit:contain; }
+    .slot label{ display:flex; align-items:center; gap:8px; font-weight:600; color:#9aa6b2; cursor:pointer; }
+    input[type=file]{ display:none; }
+    button, .btn{ background:#1f2836; color:#e6e7ea; border:1px solid #334256; border-radius:10px; padding:8px 12px; cursor:pointer; }
+    button:hover, .btn:hover{ background:#263145; }
+    .danger{ background:#3a1f24; border-color:#6d2430; }
+    .danger:hover{ background:#4a232a; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .small{ font-size:12px; }
+    .dim{ opacity:.7; }
+    .pill{ padding:4px 8px; border-radius:999px; background:#1f2836; border:1px solid #334256; }
+    .hidden{ display:none; }
+    .login{ display:flex; gap:8px; flex-wrap:wrap; }
+    .login input{ background:#0f131a; border:1px solid #334256; border-radius:10px; padding:8px 10px; color:#e6e7ea; width:220px; }
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+    .tomo-title{ font-size:18px; font-weight:700; margin:0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Superhumor (Supabase) — Admin</h1>
+    <span class="pill" id="loginState">No conectado</span>
+    <span class="muted small">Sube portada & lomo por tomo. Necesita iniciar sesión.</span>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="login" id="loginBox">
+        <input id="email" type="email" placeholder="email de Supabase" />
+        <input id="password" type="password" placeholder="contraseña" />
+        <button id="btnLogin">Entrar</button>
+        <button id="btnLogout" class="hidden">Salir</button>
+        <span id="loginMsg" class="muted small"></span>
+      </div>
+      <div class="toolbar">
+        <button id="btnCrearTomos" class="hidden">Crear tomos 1–67 (si faltan)</button>
+        <button id="btnRecargar" class="hidden">Recargar lista</button>
+      </div>
+      <div id="diag" class="muted small"></div>
+    </div>
+
+    <div id="lista" class="grid"></div>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  // === TU PROYECTO ===
+  const SUPABASE_URL = "https://qjmugmnrgxccliyrlwfz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo";
+  const BUCKET = "imagenes";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const qs = (s, el=document) => el.querySelector(s);
+  const elLista = qs("#lista");
+  const diag = qs("#diag");
+  const loginState = qs("#loginState");
+  const btnLogin = qs("#btnLogin");
+  const btnLogout = qs("#btnLogout");
+  const emailInput = qs("#email");
+  const passInput  = qs("#password");
+  const btnCrearTomos = qs("#btnCrearTomos");
+  const btnRecargar = qs("#btnRecargar");
+
+  // ====== Helpers ======
+  const fmt = (x) => new Date(x).toLocaleString();
+
+  function setLoggedUI(on){
+    btnLogout.classList.toggle("hidden", !on);
+    btnLogin.classList.toggle("hidden", on);
+    btnCrearTomos.classList.toggle("hidden", !on);
+    btnRecargar.classList.toggle("hidden", !on);
+    if(on){
+      loginState.textContent = "Conectado";
+      loginState.classList.add("ok");
+    } else {
+      loginState.textContent = "No conectado";
+      loginState.classList.remove("ok");
+    }
+  }
+
+  // ====== Auth ======
+  btnLogin.addEventListener("click", async () => {
+    diag.textContent = "";
+    const email = emailInput.value.trim();
+    const password = passInput.value.trim();
+    if(!email || !password){
+      diag.textContent = "Introduce email y contraseña.";
+      return;
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error){
+      diag.textContent = "Error login: " + error.message;
+      return;
+    }
+    setLoggedUI(true);
+    diag.textContent = "Sesión iniciada.";
+    await cargarTomos();
+  });
+
+  btnLogout.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    setLoggedUI(false);
+    elLista.innerHTML = "";
+    diag.textContent = "Sesión cerrada.";
+  });
+
+  // ====== Datos ======
+  async function cargarTomos(){
+    elLista.innerHTML = "<div class='card muted'>Cargando tomos…</div>";
+    const { data, error } = await supabase.from("tomos").select("*").order("id", { ascending:true });
+    if(error){
+      elLista.innerHTML = "<div class='card err'>Error cargando tomos: " + error.message + "</div>";
+      return;
+    }
+    renderTomos(data ?? []);
+  }
+
+  function renderTomos(tomos){
+    elLista.innerHTML = "";
+    if(!tomos.length){
+      elLista.innerHTML = "<div class='card muted'>No hay tomos. Usa el botón 'Crear tomos 1–67'.</div>";
+      return;
+    }
+    for(const t of tomos){
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="topline">
+          <h2 class="tomo-title">Tomo ${t.id}</h2>
+          <span class="muted small">Últ. mod: ${t.updated_at ? fmt(t.updated_at) : "—"}</span>
+        </div>
+        <div class="grid">
+          <div>
+            <div class="small muted">Portada</div>
+            <div class="slot" id="slot-portada-${t.id}">
+              ${t.portada_url ? `<img src="${t.portada_url}" alt="portada">` : `<label><span>📷 Subir portada</span><input type="file" accept="image/*" id="file-portada-${t.id}"></label>`}
+            </div>
+            <div class="row small">
+              ${t.portada_url ? `<a class="btn" href="${t.portada_url}" target="_blank">Ver</a>
+                                 <button class="btn danger" data-del="portada" data-id="${t.id}">Quitar enlace</button>` : ""}
+            </div>
+          </div>
+          <div>
+            <div class="small muted">Lomo</div>
+            <div class="slot" id="slot-lomo-${t.id}">
+              ${t.lomo_url ? `<img src="${t.lomo_url}" alt="lomo">` : `<label><span>📷 Subir lomo</span><input type="file" accept="image/*" id="file-lomo-${t.id}"></label>`}
+            </div>
+            <div class="row small">
+              ${t.lomo_url ? `<a class="btn" href="${t.lomo_url}" target="_blank">Ver</a>
+                              <button class="btn danger" data-del="lomo" data-id="${t.id}">Quitar enlace</button>` : ""}
+            </div>
+          </div>
+        </div>
+      `;
+      elLista.appendChild(card);
+
+      // Wire inputs (si no hay imagen)
+      const fPort = document.getElementById(`file-portada-${t.id}`);
+      if(fPort) fPort.addEventListener("change", (e)=> subirImagen(t.id, e.target.files[0], "portada"));
+
+      const fLomo = document.getElementById(`file-lomo-${t.id}`);
+      if(fLomo) fLomo.addEventListener("change", (e)=> subirImagen(t.id, e.target.files[0], "lomo"));
+
+      // Borrar enlace (limpiar campo en DB – NO borra del bucket por seguridad)
+      card.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const campo = btn.getAttribute("data-del") + "_url";
+          const id = Number(btn.getAttribute("data-id"));
+          const { error } = await supabase.from("tomos").update({ [campo]: null }).eq("id", id);
+          if(error){ alert("Error: " + error.message); return; }
+          await cargarTomos();
+        });
+      });
+    }
+  }
+
+  async function subirImagen(tomoId, file, tipo){
+    if(!file){ return; }
+    // Subir al bucket
+    const path = `uploads/${Date.now()}_tomo${tomoId}_${tipo}_${file.name}`;
+    diag.textContent = `Subiendo ${tipo} de tomo ${tomoId}…`;
+    const { error:upErr } = await supabase.storage.from(BUCKET).upload(path, file);
+    if(upErr){ diag.textContent = "Error subiendo: " + upErr.message; return; }
+    // Hacer público y obtener URL
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+    const url = data?.publicUrl;
+    // Guardar en tabla
+    const campo = tipo + "_url";
+    const { error:dbErr } = await supabase.from("tomos").update({ [campo]: url }).eq("id", tomoId);
+    if(dbErr){ diag.textContent = "Error guardando en tabla: " + dbErr.message; return; }
+    diag.textContent = "OK ✔";
+    await cargarTomos();
+  }
+
+  // Crea filas 1..67 si faltan
+  btnCrearTomos.addEventListener("click", async () => {
+    if(!confirm("Insertar tomos 1–67 que falten?")) return;
+    // Leer existentes
+    const { data:current, error } = await supabase.from("tomos").select("id");
+    if(error){ alert(error.message); return; }
+    const have = new Set((current||[]).map(x=>x.id));
+    const inserts = [];
+    for(let i=1;i<=67;i++){
+      if(!have.has(i)) inserts.push({ id:i, titulo:`Super Humor nº${i}` });
+    }
+    if(!inserts.length){ alert("No falta ninguno."); return; }
+    const { error:insErr } = await supabase.from("tomos").insert(inserts);
+    if(insErr){ alert(insErr.message); return; }
+    await cargarTomos();
+  });
+
+  btnRecargar.addEventListener("click", cargarTomos);
+
+  // Mostrar estado inicial auth
+  supabase.auth.getSession().then(({ data }) => {
+    setLoggedUI(!!data.session);
+    if(data.session) cargarTomos();
+  });
+</script>
+</body>
+</html>
