@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Superhumor (Supabase) — FIX ESM</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#121418; color:#e6e9ef; }
+    header { display:flex; gap:.75rem; align-items:center; padding:16px 20px; border-bottom:1px solid #22252c; position:sticky; top:0; background:#121418; z-index:9; }
+    h1 { margin:0; font-size:18px; font-weight:700; }
+    .badge { font-size:12px; background:#1f6feb; color:white; padding:2px 8px; border-radius:999px; }
+    input[type="text"] { flex:1; background:#0f1115; color:#e6e9ef; border:1px solid #2a2f3a; padding:10px 12px; border-radius:10px; outline:none; }
+    button { background:#1f6feb; color:#fff; border:0; border-radius:10px; padding:10px 14px; font-weight:600; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    main { max-width:1100px; margin:0 auto; padding:20px; }
+    .msg { margin:12px 0; padding:10px 12px; border-radius:8px; }
+    .msg.ok { background:#0f2b17; color:#8ef0b8; border:1px solid #164a2a; }
+    .msg.err { background:#2b0f0f; color:#ffb4b4; border:1px solid #4a1616; white-space:pre-wrap; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; margin-top:16px; }
+    .card { background:#0f1115; border:1px solid #2a2f3a; border-radius:14px; padding:14px; display:flex; gap:12px; }
+    .thumb { width:80px; height:110px; border-radius:10px; object-fit:cover; background:#1a1d24; border:1px solid #2a2f3a; }
+    .meta { display:flex; flex-direction:column; gap:6px; }
+    .title { font-weight:700; }
+    .muted { color:#9aa3b2; font-size:12px; }
+    footer { position:fixed; right:16px; bottom:16px; opacity:.7; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Superhumor (Supabase)</h1>
+    <span class="badge">ESM</span>
+    <input id="q" type="text" placeholder="Buscar tomos por número (p. ej. 5, 12, 30-33)" />
+    <button id="btnBuscar">Buscar</button>
+  </header>
+
+  <main>
+    <div id="status" class="msg ok" style="display:none"></div>
+    <div id="error" class="msg err" style="display:none"></div>
+    <div id="list" class="grid"></div>
+  </main>
+
+  <footer><button id="btnEditar">Editar</button></footer>
+
+  <!-- Cargamos supabase-js v2 vía ESM desde esm.sh (compatible con GitHub Pages) -->
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?bundle';
+
+    // === CONFIG ===
+    const SB_URL = 'https://qjmugmnrgxccliyrlwfz.supabase.co';
+    const SB_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbXVnbW5yZ3hjY2xpeXJsd2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU3ODQzOTIsImV4cCI6MjA3MTM2MDM5Mn0.ZMM9eNBj4HQxJqZ-RKDS8YLCL20xf3geyHnLm1kGUPo';
+
+    const statusEl = document.getElementById('status');
+    const errorEl  = document.getElementById('error');
+    const listEl   = document.getElementById('list');
+    const qEl      = document.getElementById('q');
+    const btnBuscar= document.getElementById('btnBuscar');
+    const btnEditar= document.getElementById('btnEditar');
+
+    const client = createClient(SB_URL, SB_ANON_KEY);
+
+    function showStatus(msg) {
+      statusEl.textContent = msg;
+      statusEl.style.display = 'block';
+      setTimeout(() => statusEl.style.display = 'none', 2500);
+    }
+    function showError(err) {
+      errorEl.textContent = String(err);
+      errorEl.style.display = 'block';
+      console.error('[ERROR]', err);
+    }
+    function resetError() { errorEl.style.display = 'none'; }
+
+    function renderList(rows) {
+      listEl.innerHTML = '';
+      if (!rows || rows.length === 0) {
+        listEl.innerHTML = '<div class="muted">Sin resultados.</div>';
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const img = document.createElement('img');
+        img.className = 'thumb';
+        img.src = r.portada_url || r.lomo_url || '';
+        img.alt = 'portada';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const t = document.createElement('div');
+        t.className = 'title';
+        t.textContent = r.titulo ?? `Tomo #${r.id}`;
+        const m = document.createElement('div');
+        m.className = 'muted';
+        m.textContent = `id: ${r.id}`;
+        meta.appendChild(t);
+        meta.appendChild(m);
+        card.appendChild(img);
+        card.appendChild(meta);
+        frag.appendChild(card);
+      }
+      listEl.appendChild(frag);
+    }
+
+    async function fetchAll() {
+      resetError();
+      listEl.innerHTML = '';
+      showStatus('Cargando…');
+      const { data, error, status } = await client
+        .from('tomos')
+        .select('id,titulo,portada_url,lomo_url')
+        .order('id', { ascending: true });
+      console.debug('DEBUG fetchAll →', { status, data, error });
+      if (error) { showError(`${status} ${error.message}`); return; }
+      renderList(data);
+    }
+
+    function parseQuery(raw) {
+      // formatos: "5, 12, 30-33"
+      const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+      const out = new Set();
+      for (const p of parts) {
+        if (/^\d+$/.test(p)) out.add(Number(p));
+        else {
+          const m = p.match(/^(\d+)\s*-\s*(\d+)$/);
+          if (m) {
+            const a = Number(m[1]), b = Number(m[2]);
+            for (let i=a; i<=b; i++) out.add(i);
+          }
+        }
+      }
+      return Array.from(out);
+    }
+
+    async function search() {
+      resetError();
+      const raw = qEl.value.trim();
+      if (!raw) { await fetchAll(); return; }
+      const ids = parseQuery(raw);
+      if (ids.length === 0) { renderList([]); return; }
+      showStatus('Buscando…');
+      const { data, error, status } = await client
+        .from('tomos')
+        .select('id,titulo,portada_url,lomo_url')
+        .in('id', ids)
+        .order('id', { ascending: true });
+      console.debug('DEBUG search →', { status, data, error });
+      if (error) { showError(`${status} ${error.message}`); return; }
+      renderList(data);
+    }
+
+    btnBuscar.addEventListener('click', search);
+    qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+    btnEditar.addEventListener('click', () => {
+      const pass = prompt('Introduce tu contraseña para modo edición (no la guardo, solo demo).');
+      if (pass) alert('Demo: aquí iría el uploader con auth. (Por ahora solo lectura)');
+    });
+
+    // Inicio
+    fetchAll();
+  </script>
+</body>
+</html>
