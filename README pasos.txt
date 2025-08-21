@@ -12,7 +12,7 @@ PASOS RÁPIDOS (GitHub Pages, sin terminal):
    - Branch: `main` (o `master`) y carpeta `/ (root)`.
    - Guarda. Espera unos segundos y aparecerá la URL (algo como https://tuusuario.github.io/superhumor/).
 4) Abre esa URL en Safari del iPhone.
-5) Pulsa el botón Compartir → "Añadir a pantalla de inicio".
+5) Pulsa el botón Compartir → "Añadir a pantalla de inicio"...
 6) ¡Listo! Tendrás un icono como una app. Funciona offline y guarda datos en el dispositivo (localStorage).
 
 Notas:
