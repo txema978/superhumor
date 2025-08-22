@@ -1,0 +1,63 @@
+/* === Supabase PWA — overrides UX (cabecera + 85/15 portada/lomo) === */
+
+/* Cabecera más compacta en móvil */
+@media (max-width: 600px){
+  .app-hero, .hero, header .banner, .top-banner{
+    padding: 12px 14px !important;
+    min-height: 64px !important;
+  }
+  .app-hero h1, .hero h1, header h1{
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+  }
+  .app-hero small, .hero small{
+    font-size: 12px !important;
+    opacity: .85;
+  }
+  /* contadores en 2 columnas */
+  .kpi-grid, .stats, .summary-grid, .counters{
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+/* Fila imagen — portada/lomo 85/15 (vista y edición) */
+.tomo .media-row,
+.tomo .img-row,
+.tomo .uploads-row,
+.tomo .display-row,
+.tomo-card .media-row,
+.card-tomo .media-row{
+  display: grid !important;
+  grid-template-columns: 5fr 1fr !important; /* 83/17 aprox. */
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+/* Bloques de imagen */
+.tomo .portada, .tomo .lomo,
+.tomo-card .portada, .tomo-card .lomo,
+.card-tomo .portada, .card-tomo .lomo,
+.dropzone.portada, .dropzone.lomo{
+  min-height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* igualar altura; cubrir */
+.tomo .portada img, .tomo .lomo img,
+.tomo-card .portada img, .tomo-card .lomo img,
+.card-tomo .portada img, .card-tomo .lomo img,
+.dropzone.portada img, .dropzone.lomo img{
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+
+/* móvil muy estrecho: ajusto ligera proporción */
+@media (max-width: 420px){
+  .tomo .media-row,
+  .tomo-card .media-row,
+  .card-tomo .media-row{
+    grid-template-columns: 1fr 0.28fr !important;
+  }
+}
