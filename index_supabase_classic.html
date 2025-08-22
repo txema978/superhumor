@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Colección Superhumor — clásico + Supabase</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="./env.js"></script>
+  <style>
+    :root{
+      --bg:#f5f6fb;
+      --heroA:#1e5bff;
+      --heroB:#0d3ad6;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --text:#121826;
+      --good:#14a44d;
+      --bad:#ef4444;
+      --pill:#eef2ff;
+      --pillActive:#1e40af;
+      --blue:#2563eb;
+      --shadow: 0 10px 18px rgba(0,0,0,.06), 0 2px 6px rgba(0,0,0,.04);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+
+    /* Hero */
+    .hero{
+      background: linear-gradient(90deg,var(--heroB),var(--heroA));
+      color:#fff;
+      padding:28px 20px;
+      border-radius:22px;
+      box-shadow: var(--shadow);
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .hero h1{margin:0;font-size: clamp(20px,3.2vw,32px)}
+    .hero p{margin:4px 0 0;opacity:.95}
+    .container{max-width:1120px;margin:22px auto;padding:0 16px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+    .stat{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+    .stat .k{display:block;font:600 34px/1.1 ui-sans-serif;margin-top:6px}
+    .label{font-weight:600;opacity:.75}
+
+    /* Search row */
+    .searchRow{display:grid;grid-template-columns:1fr auto;gap:12px;margin:18px 0}
+    .input{
+      background:#fff;border-radius:12px;padding:14px 16px;border:1px solid #e7e7ef;box-shadow:var(--shadow);
+      outline:none;font-size:16px;
+    }
+    .btn{
+      appearance:none;border:0;border-radius:12px;background:var(--blue);color:#fff;
+      padding:12px 18px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);
+    }
+    .btn.secondary{background:#e7e7ef;color:#111}
+    .btn.ghost{background:#fff;border:1px solid #e7e7ef;color:#111}
+
+    /* Pills */
+    .pills{display:flex;gap:10px;margin:10px 0 16px}
+    .pill{
+      padding:10px 14px;border-radius:999px;background:var(--pill);color:#1e3a8a;font-weight:700;cursor:pointer;user-select:none;
+      border:1px solid #e7e7ef;
+    }
+    .pill.active{background:#ffffff;color:#0b2aa1;border-color:#c7d2fe;box-shadow:var(--shadow)}
+
+    /* Cards */
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media (max-width:980px){ .grid-3{grid-template-columns:1fr} .cards{grid-template-columns:1fr} }
+    .card{
+      background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow);min-height:180px;display:flex;flex-direction:column;gap:12px
+    }
+    .card h3{margin:0 0 6px;font-size:20px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .muted{color:var(--muted);font-size:14px}
+    .toggle-have{
+      border-radius:10px;padding:10px 14px;cursor:pointer;border:1px solid #e7e7ef;background:#fff;font-weight:700;
+    }
+    .toggle-have.have{background:#eafff1;border-color:#a7f3d0;color:#065f46}
+    .tag-miss{background:#fff1f2;color:#b91c1c;border:1px solid #fecaca;padding:6px 10px;border-radius:10px;font-weight:700}
+    .comment{
+      background:#f9fafb;border:1px dashed #e5e7eb;border-radius:12px;padding:10px 12px;min-height:42px;
+    }
+    .thumb{width:100%;border-radius:14px;border:1px solid #e7e7ef;object-fit:cover;max-height:280px}
+    .edit-tools{display:none;gap:10px}
+    .edit .edit-tools{display:flex}
+    .editBadge{
+      margin-left:auto;background:#fff;border:1px solid #e7e7ef;border-radius:10px;padding:8px 12px;font-weight:700;box-shadow:var(--shadow)
+    }
+    .topbar{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div style="font-size:36px">📚</div>
+      <div>
+        <h1>Colección Superhumor</h1>
+        <p>Gestiona tu colección completa de 67 tomos — <strong>v3.8</strong></p>
+      </div>
+      <button id="btnEdit" class="editBadge">Editar</button>
+      <button id="btnExit" class="editBadge" style="display:none">Dejar de editar</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-3">
+      <div class="stat">
+        <div class="label">Tomos que tienes</div>
+        <span id="cHave" class="k">0</span>
+      </div>
+      <div class="stat">
+        <div class="label">Tomos que faltan</div>
+        <span id="cMissing" class="k">0</span>
+      </div>
+      <div class="stat">
+        <div class="label">Completado</div>
+        <span id="cDone" class="k">0%</span>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="searchRow">
+      <input id="q" class="input" placeholder="Escribe números (ej: 5, 12, 23-25, 30)" />
+      <button class="btn" id="btnSearch">Buscar</button>
+    </div>
+    <div class="muted">Puedes buscar uno o varios números separados por comas, espacios o guiones.</div>
+
+    <!-- Filters -->
+    <div class="pills">
+      <div class="pill active" data-filter="all">Todos (67)</div>
+      <div class="pill" data-filter="have">Que tengo</div>
+      <div class="pill" data-filter="miss">Que me faltan</div>
+    </div>
+
+    <!-- Cards -->
+    <div id="cards" class="cards" aria-live="polite"></div>
+  </div>
+
+<script>
+(function(){
+  const delay = (ms)=>new Promise(r=>setTimeout(r,ms));
+
+  // Safe env reader
+  function getEnv(){
+    if(!window.env || !window.env.SUPABASE_URL || !window.env.SUPABASE_ANON_KEY){
+      alert("Falta configurar .env.js con SUPABASE_URL y SUPABASE_ANON_KEY");
+      throw new Error("env missing");
+    }
+    return {url: window.env.SUPABASE_URL, key: window.env.SUPABASE_ANON_KEY};
+  }
+
+  let supa, table="tomos", bucket="imagenes";
+  let rows = [];
+  let editing = false;
+  const cardsEl = document.getElementById("cards");
+  const cHave = document.getElementById("cHave");
+  const cMiss = document.getElementById("cMissing");
+  const cDone = document.getElementById("cDone");
+  const btnEdit = document.getElementById("btnEdit");
+  const btnExit = document.getElementById("btnExit");
+
+  function lcGet(key, fallback){ try{ const v=localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+  function lcSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+  function pillActivate(name){
+    document.querySelectorAll(".pill").forEach(p=>p.classList.toggle("active", p.dataset.filter===name));
+  }
+
+  async function init(){
+    const {url,key}=getEnv();
+    supa = window.supabase.createClient(url,key);
+    await load();
+    bindUI();
+  }
+
+  function bindUI(){
+    document.querySelectorAll(".pill").forEach(p=>{
+      p.addEventListener("click", ()=>{ pillActivate(p.dataset.filter); render(p.dataset.filter); });
+    });
+    document.getElementById("btnSearch").addEventListener("click", doSearch);
+    document.getElementById("q").addEventListener("keydown",(e)=>{ if(e.key==="Enter") doSearch(); });
+    btnEdit.addEventListener("click", ()=>{ editing=true; document.body.classList.add("edit"); btnEdit.style.display="none"; btnExit.style.display="inline-flex"; render(currentFilter()); });
+    btnExit.addEventListener("click", ()=>{ editing=false; document.body.classList.remove("edit"); btnExit.style.display="none"; btnEdit.style.display="inline-flex"; render(currentFilter()); });
+  }
+
+  async function load(){
+    const { data, error } = await supa.from(table).select("*").order("id",{ascending:true}).limit(200);
+    if(error){ console.error(error); alert("Error cargando tomos"); return; }
+    rows = data || [];
+    // fallback tengo/comentario en localStorage si la tabla no los trae
+    rows = rows.map(r=>{
+      if(typeof r.tengo === "undefined"){ r.tengo = !!lcGet("tengo_"+r.id,false); }
+      if(typeof r.comentario === "undefined"){ r.comentario = lcGet("coment_"+r.id,""); }
+      return r;
+    });
+    counters();
+    render("all");
+  }
+
+  function counters(){
+    const have = rows.filter(r=>!!r.tengo).length;
+    const miss = rows.length - have;
+    cHave.textContent = have;
+    cMiss.textContent = miss;
+    cDone.textContent = Math.round((have/(rows.length||1))*100) + "%";
+    // actualizar pill labels
+    const pills = document.querySelectorAll(".pill");
+    pills[0].textContent = `Todos (${rows.length})`;
+    pills[1].textContent = `Que tengo (${have})`;
+    pills[2].textContent = `Que me faltan (${miss})`;
+  }
+
+  function currentFilter(){
+    const a = document.querySelector(".pill.active");
+    return a ? a.dataset.filter : "all";
+  }
+
+  function render(filterName="all"){
+    cardsEl.innerHTML = "";
+    let list = rows;
+    if(filterName==="have") list = rows.filter(r=>r.tengo);
+    if(filterName==="miss") list = rows.filter(r=>!r.tengo);
+
+    for(const r of list){
+      const card = document.createElement("div");
+      card.className="card";
+      card.id = "tomo_"+r.id;
+      const titulo = r.titulo || `Super Humor nº${r.id}`;
+      card.innerHTML = `
+        <div class="topbar">
+          <h3 style="margin:0">Tomo ${r.id}</h3>
+          <div class="muted" style="margin-left:8px">${titulo}</div>
+          ${editing ? `<div class="muted" style="margin-left:auto">Modo edición</div>`:""}
+        </div>
+        <div class="row">
+          <button class="toggle-have ${r.tengo?"have":""}" data-id="${r.id}">${r.tengo?"✓ Lo tengo":"Marcar como tengo"}</button>
+          <span class="tag-miss" ${r.tengo?"style='display:none'":""}>✕ TE FALTA</span>
+        </div>
+
+        <div class="row">
+          ${thumbBlock(r.portada_url,"Portada",r.id,"portada")}
+          ${thumbBlock(r.lomo_url,"Lomo",r.id,"lomo")}
+        </div>
+
+        <div class="muted">Comentario</div>
+        <div class="comment" contenteditable="true" data-id="${r.id}">${r.comentario?escapeHtml(r.comentario):"Haz clic para añadir comentario..."}</div>
+      `;
+      cardsEl.appendChild(card);
+    }
+
+    // bind toggles & comment saves & uploads
+    cardsEl.querySelectorAll(".toggle-have").forEach(btn=>{
+      btn.addEventListener("click", async (e)=>{
+        const id = +btn.dataset.id;
+        const row = rows.find(t=>t.id===id);
+        row.tengo = !row.tengo;
+        btn.classList.toggle("have", row.tengo);
+        btn.textContent = row.tengo ? "✓ Lo tengo" : "Marcar como tengo";
+        const tag = btn.parentElement.querySelector(".tag-miss");
+        if(tag) tag.style.display = row.tengo ? "none":"inline-flex";
+        counters();
+        await saveField(id, { tengo: row.tengo });
+      });
+    });
+
+    cardsEl.querySelectorAll(".comment").forEach(area=>{
+      area.addEventListener("blur", async ()=>{
+        const id = +area.dataset.id;
+        const row = rows.find(t=>t.id===id);
+        row.comentario = area.textContent.trim();
+        await saveField(id, { comentario: row.comentario });
+      });
+    });
+
+    // uploads
+    cardsEl.querySelectorAll("input[type=file]").forEach(inp=>{
+      inp.addEventListener("change", async ()=>{
+        const id = +inp.dataset.id;
+        const kind = inp.dataset.kind; // portada/lomo
+        const file = inp.files && inp.files[0];
+        if(!file) return;
+        const path = `uploads/${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
+        const { error: upErr } = await supa.storage.from(bucket).upload(path, file, { cacheControl: "3600", upsert: false });
+        if(upErr){ alert("Error subiendo "+kind); return; }
+        const pub = supa.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+        await saveField(id, kind==="portada" ? { portada_url: pub } : { lomo_url: pub });
+        // update UI
+        const img = document.getElementById(`${kind}_img_${id}`);
+        if(img){ img.src = pub; img.style.display="block"; }
+      });
+    });
+
+    // delete image
+    cardsEl.querySelectorAll("[data-action=del]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const id = +btn.dataset.id;
+        const kind = btn.dataset.kind;
+        if(!confirm("¿Eliminar "+kind+"?")) return;
+        await saveField(id, kind==="portada" ? { portada_url: null } : { lomo_url: null });
+        const img = document.getElementById(`${kind}_img_${id}`);
+        if(img){ img.src=""; img.style.display="none"; }
+      });
+    });
+  }
+
+  function thumbBlock(url, label, id, kind){
+    const has = !!url;
+    return `
+      <div style="flex:1;min-width:220px">
+        <div class="muted" style="margin:4px 0 6px">${label} ${editing?`<span class="edit-tools">
+          <label class="btn ghost" style="padding:6px 10px;cursor:pointer">
+            📷 Subir ${kind}
+            <input type="file" accept="image/*" data-id="${id}" data-kind="${kind}" style="display:none">
+          </label>
+          <button class="btn secondary" data-action="del" data-id="${id}" data-kind="${kind}">🗑️</button>
+        </span>`:""}</div>
+        <img id="${kind}_img_${id}" class="thumb" ${has?`src="${url}"`:`style="display:none"`} alt="${label}"/>
+      </div>`;
+  }
+
+  async function saveField(id, patch){
+    // fallback: store locally if DB schema misses those fields
+    try{
+      const keys = Object.keys(patch);
+      if(keys.includes("tengo")) lcSet("tengo_"+id, patch.tengo);
+      if(keys.includes("comentario")) lcSet("coment_"+id, patch.comentario);
+      const { error } = await supa.from(table).update(patch).eq("id", id);
+      if(error) console.warn("Update warning:", error.message);
+    }catch(err){ console.warn(err); }
+  }
+
+  function doSearch(){
+    const raw = (document.getElementById("q").value||"").trim();
+    if(!raw) return;
+    const targets = parseNumbers(raw);
+    if(!targets.length) return;
+    // scroll to first and highlight
+    const first = document.getElementById("tomo_"+targets[0]);
+    if(first){ first.scrollIntoView({behavior:"smooth",block:"start"}); flash(first); }
+  }
+
+  function parseNumbers(str){
+    const out = new Set();
+    const parts = str.split(/[,\s;]+/).filter(Boolean);
+    for(const p of parts){
+      if(p.includes("-")){
+        const [a,b] = p.split("-").map(n=>+n);
+        if(a && b && a<=b){ for(let i=a;i<=b;i++) out.add(i); }
+      }else{
+        const n = +p; if(n) out.add(n);
+      }
+    }
+    return Array.from(out);
+  }
+
+  function flash(el){
+    el.style.transition="box-shadow .2s ease";
+    const old = el.style.boxShadow;
+    el.style.boxShadow="0 0 0 4px rgba(37,99,235,.35)";
+    setTimeout(()=>el.style.boxShadow=old, 900);
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+
+  // boot
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
