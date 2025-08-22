@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Colección Superhumor — v6 (compacto + búsqueda múltiple)</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#5b6475;
+      --ok:#10b981;
+      --danger:#ef4444;
+      --chip:#1e40ff;
+      --chipText:#fff;
+      --chipSoft:#e6ecff;
+      --ring:rgba(30,64,255,.15);
+      --gradient-start:#1e5bf7;
+      --gradient-end:#0f3bd7;
+      --frame:#e9edf6;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    }
+    .container{max-width:1160px;margin:0 auto;padding:16px 16px 64px}
+    .hero{
+      background:linear-gradient(180deg,var(--gradient-start),var(--gradient-end));
+      color:#fff;
+      padding:18px 0;
+      margin-bottom:18px;
+      box-shadow:0 10px 30px rgba(15,59,215,.18) inset;
+    }
+    .hero .container{padding:0 16px}
+    .titleRow{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;
+      font-weight:800;font-size:22px;letter-spacing:.2px;
+    }
+    .brand i{font-size:22px}
+    .subtitle{opacity:.95;font-weight:500}
+    .chipButton{
+      background:#fff;color:#0e1a4b;border:0;border-radius:12px;
+      padding:8px 14px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.12);
+      cursor:pointer;
+    }
+    /* counters */
+    .counters{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;
+    }
+    .kpi{
+      background:rgba(255,255,255,.14);backdrop-filter:saturate(1.2) blur(3px);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:14px;color:#fff;padding:14px 16px;
+    }
+    .kpi h3{margin:0 0 4px 0;font-weight:600;font-size:14px;opacity:.95}
+    .kpi .num{font-size:28px;font-weight:800;letter-spacing:.5px}
+    /* search + filters */
+    .toolbar{margin-top:14px;background:var(--card);border:1px solid var(--frame);border-radius:14px;padding:10px}
+    .searchRow{display:grid;grid-template-columns:1fr auto;gap:10px}
+    .searchRow input{
+      width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--frame);
+      outline:none;font-size:15px;background:#fff;
+    }
+    .searchRow input:focus{box-shadow:0 0 0 4px var(--ring)}
+    .searchRow button{
+      padding:12px 16px;border:0;border-radius:10px;background:var(--chip);color:#fff;
+      font-weight:700;cursor:pointer;
+    }
+    .hint{margin:8px 2px 0 2px;color:var(--muted);font-size:13px}
+    .filters{display:flex;gap:10px;flex-wrap:wrap;padding:8px 2px 4px}
+    .chip{padding:9px 14px;border-radius:20px;border:1px solid var(--chip);
+      color:var(--chip);font-weight:700;background:#fff;cursor:pointer}
+    .chip.active{background:var(--chip);color:#fff}
+    /* grid */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+    @media (max-width:1024px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:600px){
+      .hero{padding:14px 0}
+      .brand{font-size:18px}
+      .subtitle{font-size:12px}
+      .counters{grid-template-columns:1fr 1fr}
+      .grid{grid-template-columns:1fr}
+    }
+    .card{background:var(--card);border:1px solid var(--frame);border-radius:14px;padding:14px}
+    .tomoHeader{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .tomoTitle{font-size:18px;font-weight:800}
+    .own{
+      margin-left:auto;border-radius:10px;border:1px solid var(--frame);background:#fff;padding:6px 10px;
+      cursor:pointer;font-weight:700;color:#0b1438;
+    }
+    .own.owned{background:#e9fff5;border-color:#baf3dc;color:#056343}
+    /* cover + spine 85/15 */
+    .mediaRow{display:grid;grid-template-columns:85% 15%;gap:10px;align-items:stretch}
+    .cover, .spine{background:#fff;border:1px dashed var(--frame);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .cover img{width:100%;height:100%;object-fit:cover}
+    .spine img{width:100%;height:100%;object-fit:cover}
+    .label{font-size:13px;color:var(--muted);margin:8px 2px 6px}
+    .empty{color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <div class="titleRow">
+        <div>
+          <div class="brand"><i>📚</i> Colección Superhumor</div>
+          <div class="subtitle">Gestiona tu colección completa de 67 tomos — <b>v6</b></div>
+        </div>
+        <button id="editBtn" class="chipButton" title="(Sólo visual en esta versión)">Editar</button>
+      </div>
+      <div class="counters">
+        <div class="kpi"><h3>Tomos que tienes</h3><div class="num" id="kpiTengo">0</div></div>
+        <div class="kpi"><h3>Tomos que faltan</h3><div class="num" id="kpiFaltan">0</div></div>
+        <div class="kpi"><h3>Completado</h3><div class="num" id="kpiPct">0%</div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="toolbar">
+      <div class="searchRow">
+        <input id="searchInput" type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)" />
+        <button id="searchBtn">Buscar</button>
+      </div>
+      <div class="hint">Puedes buscar uno o varios números separados por comas, espacios o guiones. Ejemplos: <b>5</b>, <b>2,3,4</b> ó <b>10-15</b>.</div>
+      <div class="filters">
+        <button class="chip active" data-filter="all">Todos (67)</button>
+        <button class="chip" data-filter="own">Que tengo</button>
+        <button class="chip" data-filter="missing">Que me faltan</button>
+      </div>
+    </section>
+
+    <section id="grid" class="grid" aria-live="polite"></section>
+  </main>
+
+  <!-- env with SUPABASE_URL / SUPABASE_ANON_KEY -->
+  <script src="env.js"></script>
+  <script src="https://esm.sh/@supabase/supabase-js@2"></script>
+  <script>
+  (function(){
+    const COVER_FALLBACK = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop";
+    const SPINE_FALLBACK = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=600&auto=format&fit=crop";
+
+    // LocalStorage helpers for "tengo"
+    const LS_KEY = "superhumor_tengo_ids_v1";
+    const getTengo = () => {
+      try{ return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }catch(_){ return []; }
+    };
+    const saveTengo = (ids) => localStorage.setItem(LS_KEY, JSON.stringify(Array.from(new Set(ids))));
+    const toggleTengo = (id) => {
+      const cur = new Set(getTengo());
+      cur.has(id) ? cur.delete(id) : cur.add(id);
+      saveTengo([...cur]);
+      return [...cur];
+    };
+
+    // State
+    let tomos = [];
+    let filterMode = "all"; // all | own | missing
+    let filterSet = null;   // null or Set of ids from search
+
+    // DOM
+    const grid = document.getElementById("grid");
+    const chips = document.querySelectorAll(".chip");
+    const kpiTengo = document.getElementById("kpiTengo");
+    const kpiFaltan = document.getElementById("kpiFaltan");
+    const kpiPct = document.getElementById("kpiPct");
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+
+    // Filter chips
+    chips.forEach(ch => ch.addEventListener("click", () => {
+      chips.forEach(c => c.classList.remove("active"));
+      ch.classList.add("active");
+      filterMode = ch.dataset.filter;
+      render();
+    }));
+
+    // Search multi CSV / ranges
+    function parseSearch(value){
+      if(!value) return null;
+      const parts = value.split(/[,\\s]+/).map(s => s.trim()).filter(Boolean);
+      const nums = new Set();
+      for(const p of parts){
+        if(/^-?\\d+\\s*-\\s*\\d+$/.test(p)){ // range a-b
+          const [a,b] = p.split("-").map(n => parseInt(n.trim(),10));
+          if(!isNaN(a) && !isNaN(b)){
+            const lo = Math.min(a,b), hi = Math.max(a,b);
+            for(let i=lo;i<=hi;i++) nums.add(i);
+          }
+        }else{
+          const n = parseInt(p,10);
+          if(!isNaN(n)) nums.add(n);
+        }
+      }
+      return nums.size ? nums : null;
+    }
+
+    function applySearch(){
+      filterSet = parseSearch(searchInput.value);
+      render();
+    }
+    searchBtn.addEventListener("click", applySearch);
+    searchInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ applySearch(); }});
+
+    // Render
+    function render(){
+      const tengo = new Set(getTengo());
+      let items = [...tomos];
+
+      // filter by chips
+      if(filterMode === "own"){
+        items = items.filter(t => tengo.has(t.id));
+      }else if(filterMode === "missing"){
+        items = items.filter(t => !tengo.has(t.id));
+      }
+
+      // filter by search set
+      if(filterSet){
+        items = items.filter(t => filterSet.has(t.id));
+      }
+
+      // KPIs
+      const ownCount = tengo.size;
+      const total = tomos.length || 67;
+      const missing = Math.max(0, total - ownCount);
+      const pct = Math.round((ownCount/total)*100);
+      kpiTengo.textContent = ownCount;
+      kpiFaltan.textContent = missing;
+      kpiPct.textContent = pct + "%";
+
+      grid.innerHTML = items.map(t => cardHTML(t, tengo.has(t.id))).join("");
+      // wire buttons
+      grid.querySelectorAll("[data-own]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.getAttribute("data-own"), 10);
+          const after = new Set(toggleTengo(id));
+          btn.classList.toggle("owned", after.has(id));
+          render(); // refresh KPIs / filters quickly
+        });
+      });
+    }
+
+    function cardHTML(t, owned){
+      const cover = t.portada_url || COVER_FALLBACK;
+      const spine = t.lomo_url || SPINE_FALLBACK;
+      return `
+        <article class="card">
+          <div class="tomoHeader">
+            <div class="tomoTitle">Tomo ${t.id}</div>
+            <button class="own ${owned?'owned':''}" data-own="${t.id}">${owned?'✓ Lo tengo':'Marcar como tengo'}</button>
+          </div>
+          <div class="label">Portada</div>
+          <div class="mediaRow">
+            <div class="cover"><img loading="lazy" src="${cover}" alt="Portada tomo ${t.id}"></div>
+            <div class="spine"><img loading="lazy" src="${spine}" alt="Lomo tomo ${t.id}"></div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function main(){
+      if(!window.env || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY){
+        alert("Falta configurar env.js con SUPABASE_URL y SUPABASE_ANON_KEY");
+        return;
+      }
+      const client = supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+      const { data, error } = await client.from("tomos").select("id,titulo,portada_url,lomo_url").order("id",{ascending:true}).limit(67);
+      if(error){
+        console.error(error);
+        alert("Error cargando tomos");
+        return;
+      }
+      // Normaliza: si no hay, pone ids 1..67 vacíos
+      let rows = data || [];
+      const seen = new Set(rows.map(r=>r.id));
+      for(let i=1;i<=67;i++){
+        if(!seen.has(i)) rows.push({id:i,titulo:`Super Humor nº${i}`, portada_url:null, lomo_url:null});
+      }
+      rows.sort((a,b)=>a.id-b.id);
+      tomos = rows;
+      render();
+    }
+
+    main();
+  })();
+  </script>
+</body>
+</html>
