@@ -1,0 +1,35 @@
+
+/* === Ajustes responsivos para cabecera y tomos === */
+
+/* Cabecera más compacta en móvil */
+@media (max-width: 768px) {
+  header {
+    padding: 8px 12px;
+  }
+  header h1 {
+    font-size: 1.2rem;
+  }
+  header p {
+    font-size: 0.8rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+}
+
+/* Portada y lomo en paralelo con proporción 85/15 */
+.tomo-images {
+  display: grid;
+  grid-template-columns: 85% 15%;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tomo-images img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
