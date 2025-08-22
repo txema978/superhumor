@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colección Superhumor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f9f9f9; color:#222; }
+    header {
+      background: linear-gradient(90deg, #2563eb, #1d4ed8);
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header p { margin: 4px 0 0; font-size: 0.9rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 15px;
+    }
+    .stat {
+      background: white;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-size: 1.2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .search-box { margin: 15px; text-align: center; }
+    .search-box input { padding: 8px; width: 70%; border:1px solid #ccc; border-radius: 5px; }
+    .search-box button { padding: 8px 15px; border:none; border-radius: 5px; background:#2563eb; color:white; }
+
+    .filters { display:flex; justify-content:center; flex-wrap: wrap; gap:10px; margin:15px; }
+    .filters button {
+      border:1px solid #ccc; border-radius:20px; padding:6px 12px; cursor:pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+      margin: 15px;
+    }
+    .tomo {
+      background:white;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .tomo h2 { margin-top:0; font-size:1.2rem; }
+
+    .imagenes {
+      display: flex;
+      gap: 10px;
+    }
+    .imagenes img {
+      width: 48%;
+      border:1px solid #ccc;
+      border-radius:4px;
+      object-fit: cover;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 6px 10px; }
+      header h1 { font-size: 1.2rem; }
+      header p { font-size: 0.8rem; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .imagenes { flex-direction: row; }
+      .imagenes img { width: 50%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 Colección Superhumor</h1>
+    <p>Gestiona tu colección completa de 67 tomos — v3.8</p>
+  </header>
+
+  <section class="stats">
+    <div class="stat">Tomos que tienes<br><b>1</b></div>
+    <div class="stat">Tomos que faltan<br><b>66</b></div>
+    <div class="stat">Completado<br><b>1%</b></div>
+  </section>
+
+  <section class="search-box">
+    <input type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)">
+    <button>Buscar</button>
+  </section>
+
+  <section class="filters">
+    <button>Todos (67)</button>
+    <button>Que tengo (1)</button>
+    <button>Que me faltan (66)</button>
+  </section>
+
+  <section class="grid">
+    <div class="tomo">
+      <h2>Tomo 1</h2>
+      <div class="imagenes">
+        <img src="https://via.placeholder.com/150x200?text=Portada">
+        <img src="https://via.placeholder.com/60x200?text=Lomo">
+      </div>
+    </div>
+    <div class="tomo">
+      <h2>Tomo 2</h2>
+      <div class="imagenes">
+        <img src="https://via.placeholder.com/150x200?text=Portada">
+        <img src="https://via.placeholder.com/60x200?text=Lomo">
+      </div>
+    </div>
+  </section>
+</body>
+</html>
