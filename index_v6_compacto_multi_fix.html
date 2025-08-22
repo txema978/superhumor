@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colección Superhumor — v6 compacto</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --panel:#ffffff;
+    --text:#0f172a;
+    --muted:#475569;
+    --brand:#1d4ed8;
+    --brand-2:#2563eb;
+    --brand-3:#3b82f6;
+    --chip-bg:#e8efff;
+    --chip-on:#1e40af;
+    --ok:#16a34a;
+    --danger:#ef4444;
+    --card-shadow: 0 6px 20px rgba(2,6,23,.08);
+    --radius:14px;
+  }
+  html,body{background:var(--bg);color:var(--text);margin:0;font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;}
+  /* Header compacto (claro) */
+  .hero{
+    background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+    color:#fff;
+    padding:18px 18px 20px;
+    border-bottom-left-radius:22px;
+    border-bottom-right-radius:22px;
+    box-shadow: 0 10px 30px rgba(30,58,138,.25);
+    margin-bottom:18px;
+  }
+  .hero .title{display:flex;align-items:center;gap:12px;font-weight:800;font-size:22px;letter-spacing:.2px}
+  .hero .sub{opacity:.9;margin-top:2px;font-weight:600}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+  /* KPIs compactos */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px}
+  .kpi{background:var(--panel);border-radius:16px;padding:16px 18px;box-shadow:var(--card-shadow)}
+  .kpi .n{font-size:28px;font-weight:800}
+  .kpi .l{color:var(--muted);font-weight:600;margin-top:6px}
+  /* Buscador */
+  .searchbar{display:flex;gap:10px;margin:14px 0 6px}
+  .searchbar input{flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px 14px;font-size:16px;background:var(--panel);box-shadow:var(--card-shadow)}
+  .btn{background:var(--brand);border:none;color:#fff;padding:14px 18px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,.25)}
+  .btn:hover{background:var(--brand-2)}
+  /* Chips filtros */
+  .chips{display:flex;gap:12px;margin:8px 0 18px;flex-wrap:wrap}
+  .chip{background:var(--chip-bg);color:var(--chip-on);border:none;padding:10px 14px;border-radius:999px;font-weight:800;cursor:pointer}
+  .chip.active{background:var(--brand-3);color:#fff;box-shadow:0 6px 16px rgba(59,130,246,.25)}
+  /* Grid de tomos */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--panel);border-radius:16px;padding:16px;box-shadow:var(--card-shadow)}
+  .card h3{margin:0 0 10px;font-size:20px}
+  .meta{color:var(--muted);font-size:14px;margin-bottom:10px}
+  /* Portada/Lomo 85/15 alineados por altura */
+  .pl{display:grid;grid-template-columns:85% 15%;gap:10px;align-items:stretch}
+  .pl .cover, .pl .spine {width:100%;border-radius:12px;background:#0a0a0a0a;display:block;object-fit:cover;height:260px}
+  .controls{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .tag-ok{background:#ecfdf5;color:var(--ok);border:1px solid #bbf7d0;padding:8px 12px;border-radius:999px;font-weight:800;cursor:pointer}
+  .tag-miss{background:#fef2f2;color:var(--danger);border:1px solid #fecaca;padding:8px 12px;border-radius:999px;font-weight:800}
+  .hidden{display:none !important}
+  /* Mensajes */
+  .notice{background:#fff8e1;border:1px solid #fde68a;color:#92400e;padding:10px 12px;border-radius:12px;margin:10px 0}
+  .error{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+  /* Responsive */
+  @media (max-width:1024px){.grid{grid-template-columns:repeat(2,1fr)} .pl .cover,.pl .spine{height:230px}}
+  @media (max-width:640px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    .pl .cover,.pl .spine{height:220px}
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <div class="title">📚 Colección Superhumor <span class="sub">— vista compacta</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="n" id="kpiHave">0</div><div class="l">Tomos que tienes</div></div>
+        <div class="kpi"><div class="n" id="kpiMiss">0</div><div class="l">Tomos que faltan</div></div>
+        <div class="kpi"><div class="n" id="kpiPct">0%</div><div class="l">Completado</div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="msg" class="notice hidden"></div>
+
+    <form class="searchbar" id="search-form">
+      <input id="search" placeholder="Escribe números (ej: 5, 12, 23-25, 30)" autocomplete="off">
+      <button class="btn" type="submit">Buscar</button>
+    </form>
+    <div class="chips">
+      <button class="chip active" data-filter="all">Todos (0)</button>
+      <button class="chip" data-filter="have">Que tengo (0)</button>
+      <button class="chip" data-filter="miss">Que me faltan (0)</button>
+    </div>
+
+    <section class="grid" id="grid"></section>
+  </main>
+
+  <!-- Supabase UMD (robusto para GitHub Pages) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.2/dist/umd/supabase.js" integrity="sha384-F6m8s2V4Qn9X6XJ3z2DNhau1nG+Qjrxzrb4d8CwzNElG0n5lQnP5t1P3w5ZlE5D3" crossorigin="anonymous"></script>
+  <!-- Tu env.js debe estar al lado de este archivo -->
+  <script src="env.js"></script>
+  <script>
+  (function(){
+    const msg = document.getElementById('msg');
+    function showMsg(t, isErr=false){
+      msg.textContent = t;
+      msg.classList.toggle('error', isErr);
+      msg.classList.remove('hidden');
+      setTimeout(()=>msg.classList.add('hidden'), 5000);
+    }
+    // Validación env
+    if(!window.env || !window.env.SUPABASE_URL || !window.env.SUPABASE_ANON_KEY){
+      showMsg('Falta el archivo env.js con SUPABASE_URL y SUPABASE_ANON_KEY', true);
+      // Seguimos mostrando UI con fallback vacío
+    }
+    const client = (window.supabase && window.env)
+      ? window.supabase.createClient(window.env.SUPABASE_URL, window.env.SUPABASE_ANON_KEY)
+      : null;
+
+    const grid = document.getElementById('grid');
+    const chips = document.querySelectorAll('.chip');
+    const chipAll  = document.querySelector('.chip[data-filter="all"]');
+    const chipHave = document.querySelector('.chip[data-filter="have"]');
+    const chipMiss = document.querySelector('.chip[data-filter="miss"]');
+    const kpiHave = document.getElementById('kpiHave');
+    const kpiMiss = document.getElementById('kpiMiss');
+    const kpiPct  = document.getElementById('kpiPct');
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search');
+
+    let rows = [];       // todas las filas
+    let view = [];       // filtradas por búsqueda
+    let filter = 'all';  // all | have | miss
+
+    function keyHave(id){ return `superhumor_have_${id}`; }
+    function isHave(id){ return localStorage.getItem(keyHave(id)) === '1'; }
+    function setHave(id, v){ v ? localStorage.setItem(keyHave(id),'1') : localStorage.removeItem(keyHave(id)); }
+
+    function parseQuery(q){
+      if(!q) return null;
+      const set = new Set();
+      q.split(/[,\s]+/).filter(Boolean).forEach(tok=>{
+        if(/^\d+\-\d+$/.test(tok)){ // rango
+          const [a,b] = tok.split('-').map(n=>parseInt(n,10));
+          const start = Math.min(a,b), end = Math.max(a,b);
+          for(let i=start;i<=end;i++) set.add(i);
+        }else if(/^\d+$/.test(tok)){
+          set.add(parseInt(tok,10));
+        }
+      });
+      return set.size ? set : null;
+    }
+
+    function updateKPIs(){
+      const have = rows.filter(r=>isHave(r.id)).length;
+      const total = rows.length;
+      const miss = total - have;
+      const pct  = total ? Math.round((have/total)*100) : 0;
+      kpiHave.textContent = have;
+      kpiMiss.textContent = miss;
+      kpiPct.textContent  = pct + '%';
+      chipAll.textContent  = `Todos (${total})`;
+      chipHave.textContent = `Que tengo (${have})`;
+      chipMiss.textContent = `Que me faltan (${miss})`;
+    }
+
+    function cardHTML(r){
+      const have = isHave(r.id);
+      const lomo = r.lomo_url || '';
+      const portada = r.portada_url || '';
+      return `
+        <article class="card" data-id="${r.id}" data-have="${have?'1':'0'}">
+          <h3>Tomo ${r.id}</h3>
+          <div class="meta">${r.titulo ? r.titulo : 'Sin título'}</div>
+          <div class="pl">
+            <img class="cover" src="${portada}" alt="portada tomo ${r.id}" onerror="this.style.opacity=.15">
+            <img class="spine"  src="${lomo}"    alt="lomo tomo ${r.id}"    onerror="this.style.opacity=.15">
+          </div>
+          <div class="controls">
+            <button class="tag-ok" data-action="toggle">${have?'✓ Lo tengo':'Marcar como tengo'}</button>
+            ${have?'<span class="tag-miss">✓ LO TIENES</span>':'<span class="tag-miss">✕ TE FALTA</span>'}
+          </div>
+        </article>
+      `;
+    }
+
+    function render(){
+      // Aplica filtro
+      let list = [...view];
+      if(filter==='have') list = list.filter(r=>isHave(r.id));
+      if(filter==='miss') list = list.filter(r=>!isHave(r.id));
+      grid.innerHTML = list.map(cardHTML).join('');
+    }
+
+    // Delegación para botón "Marcar como tengo"
+    grid.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-action="toggle"]');
+      if(!btn) return;
+      const card = btn.closest('.card');
+      const id = parseInt(card.dataset.id,10);
+      const now = !isHave(id);
+      setHave(id, now);
+      card.dataset.have = now ? '1':'0';
+      btn.textContent = now ? '✓ Lo tengo':'Marcar como tengo';
+      const missTag = card.querySelector('.tag-miss');
+      missTag.textContent = now ? '✓ LO TIENES':'✕ TE FALTA';
+      updateKPIs();
+      render(); // re-aplica filtro activo
+    });
+
+    // Filtros (chips)
+    chips.forEach(c=>c.addEventListener('click', ()=>{
+      chips.forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      filter = c.dataset.filter;
+      render();
+    }));
+
+    // Búsqueda múltiple
+    searchForm.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const set = parseQuery(searchInput.value.trim());
+      view = set ? rows.filter(r=>set.has(r.id)) : [...rows];
+      if(set && !view.length) showMsg('No hay tomos para esos números.');
+      render();
+    });
+
+    async function load(){
+      try{
+        if(!client){
+          showMsg('Cargando en modo sin Supabase (revisa env.js).', true);
+          rows = [];
+          render();
+          updateKPIs();
+          return;
+        }
+        const { data, error } = await client
+          .from('tomos')
+          .select('id,titulo,portada_url,lomo_url')
+          .order('id', { ascending:true });
+        if(error){ console.error(error); showMsg('Error cargando tomos', true); rows=[]; }
+        else rows = data || [];
+      }catch(err){
+        console.error(err);
+        showMsg('Fallo de red al cargar tomos', true);
+        rows = [];
+      }
+      view = [...rows];
+      updateKPIs();
+      render();
+    }
+
+    load();
+  })();
+  </script>
+</body>
+</html>
