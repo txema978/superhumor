@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Superhumor (Supabase)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="env.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f6fa; margin:0; padding:0; }
+    header { background:#1e3799; color:white; padding:1rem; text-align:center; font-size:1.5rem; }
+    .stats { display:flex; justify-content:space-around; margin:1rem; }
+    .stats div { background:white; padding:1rem; border-radius:8px; flex:1; margin:0 0.5rem; text-align:center; }
+    .controls { text-align:center; margin:1rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:1rem; padding:1rem; }
+    .card { background:white; padding:1rem; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+    .card img { max-width:100%; border-radius:4px; }
+    button { padding:0.4rem 0.8rem; border:none; border-radius:4px; cursor:pointer; }
+    .btn-edit { background:#60a3bc; color:white; }
+    .btn-save { background:#38ada9; color:white; }
+    .btn-cancel { background:#b71540; color:white; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <header>📚 Colección Superhumor</header>
+  <div class="stats">
+    <div><strong id="countTengo">0</strong><br>Tomos que tienes</div>
+    <div><strong id="countFaltan">0</strong><br>Tomos que faltan</div>
+    <div><strong id="countPct">0%</strong><br>Completado</div>
+  </div>
+  <div class="controls">
+    <button id="btnEditar" class="btn-edit">Editar</button>
+    <button id="btnLogout" class="btn-cancel hidden">Salir</button>
+  </div>
+  <div id="grid" class="grid"></div>
+
+<script>
+let supabase;
+if (window.env) {
+  supabase = window.supabase.createClient(window.env.SUPABASE_URL, window.env.SUPABASE_ANON_KEY);
+} else {
+  alert("Falta configurar env.js");
+}
+
+let editMode = false;
+
+async function fetchTomos() {
+  const { data, error } = await supabase.from("tomos").select("*").order("id");
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+function renderTomos(tomos) {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  let tengo = 0;
+  tomos.forEach(t => {
+    if (t.portada_url || t.lomo_url) tengo++;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${t.titulo || "Tomo " + t.id}</h3>
+      <div>Portada:<br>${t.portada_url ? `<img src="${t.portada_url}" />` : "Sin portada"}</div>
+      <div>Lomo:<br>${t.lomo_url ? `<img src="${t.lomo_url}" />` : "Sin lomo"}</div>
+      ${editMode ? `
+        <input type="file" data-id="${t.id}" data-field="portada_url" /><br>
+        <input type="file" data-id="${t.id}" data-field="lomo_url" />` : ""}
+    `;
+    grid.appendChild(card);
+  });
+  document.getElementById("countTengo").textContent = tengo;
+  document.getElementById("countFaltan").textContent = tomos.length - tengo;
+  document.getElementById("countPct").textContent = Math.round((tengo/tomos.length)*100) + "%";
+
+  if (editMode) {
+    document.querySelectorAll("input[type=file]").forEach(inp => {
+      inp.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const field = e.target.dataset.field;
+        const id = e.target.dataset.id;
+        const filePath = `uploads/${Date.now()}_${file.name}`;
+        let { error: uploadError } = await supabase.storage.from("imagenes").upload(filePath, file);
+        if (uploadError) { alert("Error subiendo: " + uploadError.message); return; }
+        const { data: { publicUrl } } = supabase.storage.from("imagenes").getPublicUrl(filePath);
+        let { error: updateError } = await supabase.from("tomos").update({ [field]: publicUrl }).eq("id", id);
+        if (updateError) { alert("Error guardando en BD: " + updateError.message); return; }
+        loadTomos();
+      });
+    });
+  }
+}
+
+async function loadTomos() {
+  const tomos = await fetchTomos();
+  renderTomos(tomos);
+}
+
+document.getElementById("btnEditar").addEventListener("click", async () => {
+  if (!editMode) {
+    editMode = true;
+    document.getElementById("btnEditar").textContent = "Dejar de editar";
+    document.getElementById("btnLogout").classList.remove("hidden");
+  } else {
+    editMode = false;
+    document.getElementById("btnEditar").textContent = "Editar";
+    loadTomos();
+  }
+  loadTomos();
+});
+
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  await supabase.auth.signOut();
+  alert("Sesión cerrada");
+  editMode = false;
+  document.getElementById("btnEditar").textContent = "Editar";
+  document.getElementById("btnLogout").classList.add("hidden");
+  loadTomos();
+});
+
+loadTomos();
+</script>
+</body>
+</html>
