@@ -1,0 +1,82 @@
+
+/* === Filtros estilo "pill" en azul (no toca nada más) =====================
+   Cópialo sobre el último CSS de overrides (por ejemplo, el que ya usas
+   'overrides_mobile85.css') o súbelo con ese mismo nombre para que el HTML
+   lo coja sin tocar nada del index.
+========================================================================== */
+
+/* Contenedor de filtros (por si existe); no obliga a que exista */
+.filters, .filtros, .filter-group, .filter-bar {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Píldoras base (no activas): borde gris claro, fondo blanco */
+.filter-pill,
+.filter-btn,
+button[data-filter],
+button[data-tab="todos"],
+button[data-tab="tengo"],
+button[data-tab="faltan"],
+button[data-filter="todos"],
+button[data-filter="tengo"],
+button[data-filter="faltan"] {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #e5e7eb;      /* gris claro */
+  background: #ffffff;
+  color: #111827;                  /* texto negro (tailwind gray-900) */
+  padding: .625rem 1rem;
+  border-radius: .875rem;          /* píldora */
+  font-weight: 600;
+  line-height: 1;
+  transition: all .15s ease-in-out;
+  box-shadow: 0 1px 0 rgba(0,0,0,.02);
+}
+
+/* Hover en no activas */
+.filter-pill:hover,
+.filter-btn:hover,
+button[data-filter]:hover,
+button[data-tab="todos"]:hover,
+button[data-tab="tengo"]:hover,
+button[data-tab="faltan"]:hover,
+button[data-filter="todos"]:hover,
+button[data-filter="tengo"]:hover,
+button[data-filter="faltan"]:hover {
+  border-color: #c7cdd7;
+  background: #f8fafc;
+}
+
+/* Estado ACTIVO: azul #2563EB (igual al botón "Buscar") */
+.filter-pill.active,
+.filter-btn.active,
+button[data-filter].active,
+button[data-tab].active,
+button[data-filter="todos"].active,
+button[data-filter="tengo"].active,
+button[data-filter="faltan"].active {
+  background: #2563eb !important; /* azul */
+  border-color: #2563eb !important;
+  color: #ffffff !important;       /* texto blanco */
+  box-shadow: 0 1px 0 rgba(37, 99, 235, .2);
+}
+
+/* Asegura contraste del contador dentro de la píldora activa, si existe */
+.filter-pill.active span,
+.filter-btn.active span,
+button[data-filter].active span,
+button[data-tab].active span {
+  color: #ffffff !important;
+}
+
+/* Si tus filtros son <a> en lugar de <button> */
+a.filter-pill.active,
+a.filter-btn.active,
+a[data-filter].active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
