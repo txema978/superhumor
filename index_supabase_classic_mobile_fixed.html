@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colección Superhumor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Ajuste 85/15 portada y lomo */
+    .tomo-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .portada {
+      flex: 0 0 85%;
+    }
+    .lomo {
+      flex: 0 0 15%;
+    }
+    .portada img, .lomo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>📚 Colección Superhumor</h1>
+    <p>Gestiona tu colección completa de 67 tomos — v3.8</p>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div>Tomos que tienes <strong>1</strong></div>
+      <div>Tomos que faltan <strong>66</strong></div>
+      <div>Completado <strong>1%</strong></div>
+    </section>
+
+    <section class="busqueda">
+      <input type="text" placeholder="Escribe números (ej: 5, 12, 23-25, 30)" />
+      <button>Buscar</button>
+    </section>
+
+    <section class="filtros">
+      <button>Todos (67)</button>
+      <button>Que tengo (1)</button>
+      <button>Que me faltan (66)</button>
+    </section>
+
+    <section class="tomos">
+      <article class="tomo">
+        <h2>Tomo 1</h2>
+        <div class="tomo-row">
+          <div class="portada"><img src="https://via.placeholder.com/300x400?text=Portada+1" alt="Portada Tomo 1"></div>
+          <div class="lomo"><img src="https://via.placeholder.com/80x400?text=Lomo+1" alt="Lomo Tomo 1"></div>
+        </div>
+      </article>
+
+      <article class="tomo">
+        <h2>Tomo 2</h2>
+        <div class="tomo-row">
+          <div class="portada"><img src="https://via.placeholder.com/300x400?text=Portada+2" alt="Portada Tomo 2"></div>
+          <div class="lomo"><img src="https://via.placeholder.com/80x400?text=Lomo+2" alt="Lomo Tomo 2"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
