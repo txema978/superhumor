@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Humor - Filtros Azules</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .filter-btn {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .filter-btn.active {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    .search {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+    .search input {
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px 0 0 4px;
+    }
+    .search button {
+      padding: 6px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+    }
+    .results {
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Super Humor</h1>
+  </header>
+
+  <div class="filters">
+    <button class="filter-btn" onclick="setActive(this)">Tengo</button>
+    <button class="filter-btn" onclick="setActive(this)">No tengo</button>
+    <button class="filter-btn" onclick="setActive(this)">Todos</button>
+  </div>
+
+  <div class="search">
+    <input type="text" placeholder="Buscar...">
+    <button>Buscar</button>
+  </div>
+
+  <div class="results">
+    <p>Aquí se mostrarán los resultados...</p>
+  </div>
+
+  <script>
+    function setActive(btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
