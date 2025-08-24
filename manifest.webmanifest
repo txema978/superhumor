@@ -1,14 +1,26 @@
 {
-  "name": "Superhumor",
-  "short_name": "Superhumor",
-  "start_url": "/superhumor/index_v4_secure_edit_search_multi_PWA_fix_ios.html",
+  "name": "Super Humor",
+  "short_name": "Super Humor",
+  "start_url": "./index_v4_secure_edit_search_multi_PWA.html?source=pwa",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0f1623",
-  "theme_color": "#0f1623",
+  "background_color": "#1e5bff",
+  "theme_color": "#1e5bff",
   "icons": [
     {
       "src": "apple-touch-icon.png",
       "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
